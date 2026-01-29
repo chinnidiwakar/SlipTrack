@@ -15,19 +15,23 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
           
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
-
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: my-app-apk
           path: app/build/outputs/apk/debug/*.apk
 
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+        env:
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: app/build/outputs/apk/release/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
