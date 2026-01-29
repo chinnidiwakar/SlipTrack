@@ -1,0 +1,71 @@
+package uk.chinnidiwakar.sliptrack.domain
+
+import uk.chinnidiwakar.sliptrack.SlipEvent
+import uk.chinnidiwakar.sliptrack.StreakCalculator
+
+data class InsightsData(
+    val mostCommonHour: String?,
+    val mostCommonDay: String?,
+    val weekComparison: String?,
+    val averageStreak: String?
+)
+
+fun computeInsights(slips: List<SlipEvent>): InsightsData? {
+    if (slips.size < 3) return null
+
+    val zone = java.time.ZoneId.systemDefault()
+    val times = slips.map {
+        java.time.Instant.ofEpochMilli(it.timestamp).atZone(zone)
+    }
+
+    val mostCommonHour = times
+        .groupingBy { it.hour }
+        .eachCount()
+        .maxByOrNull { it.value }
+        ?.key
+        ?.let { hour ->
+            when {
+                hour == 0 -> "around midnight"
+                hour < 12 -> "$hour AM"
+                hour == 12 -> "12 PM"
+                else -> "${hour - 12} PM"
+            }
+        }
+
+    val mostCommonDay = times
+        .groupingBy { it.dayOfWeek }
+        .eachCount()
+        .maxByOrNull { it.value }
+        ?.key
+        ?.toString()
+        ?.lowercase()
+        ?.replaceFirstChar { it.uppercase() }
+
+    val today = java.time.LocalDate.now()
+    val thisWeekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1)
+    val lastWeekStart = thisWeekStart.minusWeeks(1)
+
+    val thisWeekCount = times.count { it.toLocalDate() >= thisWeekStart }
+    val lastWeekCount = times.count {
+        it.toLocalDate() >= lastWeekStart && it.toLocalDate() < thisWeekStart
+    }
+
+    val weekComparison =
+        if (thisWeekCount + lastWeekCount >= 2) {
+            when {
+                thisWeekCount < lastWeekCount -> "$thisWeekCount ↓ from $lastWeekCount"
+                thisWeekCount > lastWeekCount -> "$thisWeekCount ↑ from $lastWeekCount"
+                else -> "$thisWeekCount same as last week"
+            }
+        } else null
+
+    val avg = StreakCalculator.averageStreak(slips)
+    val averageStreak = if (avg > 0) "$avg days" else null
+
+    return InsightsData(
+        mostCommonHour = mostCommonHour,
+        mostCommonDay = mostCommonDay,
+        weekComparison = weekComparison,
+        averageStreak = averageStreak
+    )
+}
