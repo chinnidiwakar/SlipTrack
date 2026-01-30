@@ -25,9 +25,8 @@ class CalendarViewModel(context: Context) : ViewModel() {
     private val _days = MutableStateFlow<List<CalendarDay>>(emptyList())
     val days: StateFlow<List<CalendarDay>> = _days.asStateFlow()
 
-    private val _selectedDate = MutableStateFlow<LocalDate?>(null)
-    val selectedDate: StateFlow<LocalDate?> = _selectedDate.asStateFlow()
-
+    private val _selectedDate = MutableStateFlow<LocalDate>(LocalDate.now())
+    val selectedDate: StateFlow<LocalDate> = _selectedDate.asStateFlow()
     // ---------- CACHE (IMPORTANT) ----------
 
     private var cachedSlips = emptyList<SlipEvent>()
@@ -56,11 +55,14 @@ class CalendarViewModel(context: Context) : ViewModel() {
     // ---------- READ HELPERS ----------
 
     fun getRelapseCount(date: LocalDate): Int {
+        // Only check if the date belongs to the month currently in view
         if (YearMonth.from(date) != _currentMonth.value) return 0
+
         return _days.value
             .firstOrNull { it.day == date.dayOfMonth }
             ?.relapses ?: 0
     }
+
 
     /**
      * Used by Pager for prev / next month.
@@ -74,7 +76,6 @@ class CalendarViewModel(context: Context) : ViewModel() {
     }
 
     // ---------- INTERNAL ----------
-
     private fun observeCalendar() {
         viewModelScope.launch {
             combine(
@@ -85,9 +86,15 @@ class CalendarViewModel(context: Context) : ViewModel() {
                 month to buildCalendarDays(slips, month)
             }.collect { (month, calendarDays) ->
 
-                // Reset selection ONLY when month actually changes
+                // FIX: Don't set to null. Set to the 1st of the month instead.
                 if (lastEmittedMonth != month) {
-                    _selectedDate.value = null
+                    // If the new month is the current real-world month, pick 'today'
+                    // Otherwise, pick the 1st of that month.
+                    _selectedDate.value = if (month == YearMonth.now()) {
+                        LocalDate.now()
+                    } else {
+                        month.atDay(1)
+                    }
                     lastEmittedMonth = month
                 }
 
