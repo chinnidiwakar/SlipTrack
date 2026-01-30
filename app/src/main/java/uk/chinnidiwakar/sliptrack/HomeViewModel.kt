@@ -54,7 +54,7 @@ class HomeViewModel(context: Context) : ViewModel() {
         viewModelScope.launch {
             while (currentCoroutineContext().isActive) {
                 _elapsedText.value =
-                    uk.chinnidiwakar.sliptrack.utils.formatElapsedTime(
+                    formatElapsedTime(
                         System.currentTimeMillis() - lastRelapseTime
                     )
                 delay(1000)

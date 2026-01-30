@@ -27,13 +27,13 @@ fun SkyTheme(
 
     val AppBackground = Color(0xFF000000)
     val AppSurface = Color(0xFF161616)
-    val AppSurfaceBorder = Color(0xFF1F1F1F)
+    Color(0xFF1F1F1F)
 
-    val AccentGreen = Color(0xFF66BB6A)
-    val AccentAmber = Color(0xFFFFB74D)
-    val AccentRed = Color(0xFFE57373)
+    Color(0xFF66BB6A)
+    Color(0xFFFFB74D)
+    Color(0xFFE57373)
 
-    val darkColorScheme = darkColorScheme(
+    darkColorScheme(
         background = AppBackground,
         surface = AppSurface,
         surfaceTint = Color.Unspecified, // ← THIS LINE

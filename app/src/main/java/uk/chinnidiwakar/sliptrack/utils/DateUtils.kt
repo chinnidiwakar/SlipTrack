@@ -26,8 +26,8 @@ fun buildDaySummaries(slips: List<SlipEvent>): List<DaySummary> {
     if (slips.isEmpty()) return emptyList()
 
     val grouped = slips.groupBy {
-        val date = java.time.Instant.ofEpochMilli(it.timestamp)
-            .atZone(java.time.ZoneId.systemDefault())
+        val date = Instant.ofEpochMilli(it.timestamp)
+            .atZone(ZoneId.systemDefault())
             .toLocalDate()
         date
     }
