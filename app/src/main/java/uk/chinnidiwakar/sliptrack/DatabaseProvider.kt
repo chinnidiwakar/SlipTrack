@@ -13,7 +13,10 @@ object DatabaseProvider {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "sliptrack.db"
-            ).build()
+            )
+                .fallbackToDestructiveMigration()
+                .build()
+
             db = instance
             instance
         }

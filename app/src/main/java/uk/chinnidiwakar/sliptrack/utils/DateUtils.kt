@@ -3,6 +3,9 @@ package uk.chinnidiwakar.sliptrack.utils
 import uk.chinnidiwakar.sliptrack.SlipEvent
 import uk.chinnidiwakar.sliptrack.ui.history.DaySummary
 import uk.chinnidiwakar.sliptrack.ui.calendar.CalendarDay
+import java.time.Instant
+import java.time.YearMonth
+import java.time.ZoneId
 
 // ---------------- UTIL ----------------
 
@@ -43,23 +46,25 @@ fun buildDaySummaries(slips: List<SlipEvent>): List<DaySummary> {
         }
 }
 
-fun buildCalendarDays(slips: List<SlipEvent>): List<CalendarDay> {
-    val zone = java.time.ZoneId.systemDefault()
-    val today = java.time.LocalDate.now()
-    val startOfMonth = today.withDayOfMonth(1)
-    val daysInMonth = today.lengthOfMonth()
+fun buildCalendarDays(
+    slips: List<SlipEvent>,
+    month: YearMonth
+): List<CalendarDay> {
 
-    // Count slips per date
+    val zone = ZoneId.systemDefault()
+    val daysInMonth = month.lengthOfMonth()
+
     val counts = slips.groupBy {
-        java.time.Instant.ofEpochMilli(it.timestamp)
+        Instant.ofEpochMilli(it.timestamp)
             .atZone(zone)
             .toLocalDate()
     }.mapValues { it.value.size }
 
-    // Build full month grid
     return (1..daysInMonth).map { dayNum ->
-        val date = startOfMonth.withDayOfMonth(dayNum)
-        val count = counts[date] ?: 0
-        CalendarDay(day = dayNum, relapses = count)
+        val date = month.atDay(dayNum)
+        CalendarDay(
+            day = dayNum,
+            relapses = counts[date] ?: 0
+        )
     }
 }
