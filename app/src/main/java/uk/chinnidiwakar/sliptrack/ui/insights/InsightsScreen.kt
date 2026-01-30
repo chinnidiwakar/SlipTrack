@@ -1,5 +1,6 @@
 package uk.chinnidiwakar.sliptrack.ui.insights
 
+import android.R.attr.value
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,35 +55,49 @@ fun InsightsScreen() {
                 )
             } else {
 
-                insights?.mostCommonHour?.let {
-                    InsightCard("Most difficult time", it)
+                insights?.mostCommonHour?.let { value: String ->
+                    InsightCard("Most difficult time", value.toString())
                 }
 
-                insights?.mostCommonDay?.let {
-                    InsightCard("Hardest day", it)
+                insights?.mostCommonDay?.let { value: String ->
+                    InsightCard("Hardest day", value.toString())
                 }
 
-                insights?.weekComparison?.let {
-                    InsightCard("This week vs last week", it)
+                insights?.weekComparison?.let { value: String ->
+                    InsightCard("This week vs last week", value.toString())
                 }
 
-                insights?.averageStreak?.let {
-                    InsightCard("Typical streak length", it)
+                insights?.averageStreak?.let { value: String ->
+                    InsightCard("Typical streak length", value.toString())
                 }
+
             }
         }
     }
 }
+
 @Composable
 fun InsightCard(title: String, value: String) {
     Card(
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(3.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(1.dp)
     ) {
-        Column(Modifier.padding(18.dp)) {
-            Text(title, fontSize = 13.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
-            Text(value, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        Column(Modifier.padding(16.dp)) {
+            Text(
+                title,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+            Text(
+                value,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }

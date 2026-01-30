@@ -3,12 +3,14 @@ package uk.chinnidiwakar.sliptrack
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.dp
+import uk.chinnidiwakar.sliptrack.ui.theme.AccentButton
 import kotlin.random.Random
 
 @Composable
@@ -22,6 +24,23 @@ fun SkyTheme(
         streak < 90 -> listOf(Color(0xFF0B1D3A), Color(0xFF000814))
         else -> listOf(Color(0xFF050A1F), Color(0xFF000000))
     }
+
+    val AppBackground = Color(0xFF000000)
+    val AppSurface = Color(0xFF161616)
+    val AppSurfaceBorder = Color(0xFF1F1F1F)
+
+    val AccentGreen = Color(0xFF66BB6A)
+    val AccentAmber = Color(0xFFFFB74D)
+    val AccentRed = Color(0xFFE57373)
+
+    val darkColorScheme = darkColorScheme(
+        background = AppBackground,
+        surface = AppSurface,
+        surfaceTint = Color.Unspecified, // ← THIS LINE
+        primary = AccentButton,
+        onSurface = Color.White,
+    )
+
 
     Box(
         modifier = modifier
