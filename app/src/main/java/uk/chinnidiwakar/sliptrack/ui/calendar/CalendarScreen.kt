@@ -26,6 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,6 +44,8 @@ import uk.chinnidiwakar.sliptrack.CalendarViewModelFactory
 import uk.chinnidiwakar.sliptrack.ui.theme.AccentButton
 import java.time.LocalDate
 import java.time.YearMonth
+import androidx.compose.runtime.setValue
+
 
 // ================= HEADER =================
 
@@ -75,7 +79,7 @@ fun CalendarScreen() {
     val viewModel: CalendarViewModel = viewModel(
         factory = CalendarViewModelFactory(context)
     )
-
+    var isAdjustingPager by remember { mutableStateOf(false) }
     val month by viewModel.currentMonth.collectAsState()
     val days by viewModel.days.collectAsState()
 
@@ -150,13 +154,24 @@ fun CalendarScreen() {
                 }
             }
 
+
+
             LaunchedEffect(pagerState.currentPage) {
-                if (pagerState.currentPage == 0) {
-                    viewModel.previousMonth()
-                    pagerState.scrollToPage(1)
-                } else if (pagerState.currentPage == 2) {
-                    viewModel.nextMonth()
-                    pagerState.scrollToPage(1)
+                if (isAdjustingPager) return@LaunchedEffect
+
+                when (pagerState.currentPage) {
+                    0 -> {
+                        isAdjustingPager = true
+                        viewModel.previousMonth()
+                        pagerState.scrollToPage(1)
+                        isAdjustingPager = false
+                    }
+                    2 -> {
+                        isAdjustingPager = true
+                        viewModel.nextMonth()
+                        pagerState.scrollToPage(1)
+                        isAdjustingPager = false
+                    }
                 }
             }
 
