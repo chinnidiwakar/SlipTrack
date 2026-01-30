@@ -11,35 +11,39 @@ import kotlinx.coroutines.launch
 import uk.chinnidiwakar.sliptrack.ui.calendar.CalendarDay
 import uk.chinnidiwakar.sliptrack.utils.buildCalendarDays
 import java.time.LocalDate
+import java.time.YearMonth
 
 class CalendarViewModel(context: Context) : ViewModel() {
 
     private val dao = DatabaseProvider.get(context).slipDao()
 
+    // ---------- STATE ----------
 
-
-    private val _currentMonth =
-        MutableStateFlow(java.time.YearMonth.now())
-    val currentMonth: StateFlow<java.time.YearMonth> = _currentMonth
+    private val _currentMonth = MutableStateFlow(YearMonth.now())
+    val currentMonth: StateFlow<YearMonth> = _currentMonth.asStateFlow()
 
     private val _days = MutableStateFlow<List<CalendarDay>>(emptyList())
-    val days: StateFlow<List<CalendarDay>> = _days
+    val days: StateFlow<List<CalendarDay>> = _days.asStateFlow()
+
+    private val _selectedDate = MutableStateFlow<LocalDate?>(null)
+    val selectedDate: StateFlow<LocalDate?> = _selectedDate.asStateFlow()
+
+    // ---------- CACHE (IMPORTANT) ----------
+
+    private var cachedSlips = emptyList<SlipEvent>()
+    private var lastEmittedMonth: YearMonth? = null
+
+    // ---------- INIT ----------
 
     init {
         observeCalendar()
     }
 
-    private val _selectedDate = MutableStateFlow<LocalDate?>(null)
-    val selectedDate = _selectedDate.asStateFlow()
+    // ---------- UI ACTIONS ----------
 
     fun selectDate(date: LocalDate) {
         _selectedDate.value = date
     }
-
-    fun getRelapseCount(date: LocalDate): Int {
-        return _days.value.firstOrNull { it.day == date.dayOfMonth }?.relapses ?: 0
-    }
-
 
     fun previousMonth() {
         _currentMonth.value = _currentMonth.value.minusMonths(1)
@@ -49,16 +53,45 @@ class CalendarViewModel(context: Context) : ViewModel() {
         _currentMonth.value = _currentMonth.value.plusMonths(1)
     }
 
+    // ---------- READ HELPERS ----------
+
+    fun getRelapseCount(date: LocalDate): Int {
+        if (YearMonth.from(date) != _currentMonth.value) return 0
+        return _days.value
+            .firstOrNull { it.day == date.dayOfMonth }
+            ?.relapses ?: 0
+    }
+
+    /**
+     * Used by Pager for prev / next month.
+     * NO database access here.
+     */
+    fun getDaysForMonth(month: YearMonth): List<CalendarDay> {
+        return buildCalendarDays(
+            slips = cachedSlips,
+            month = month
+        )
+    }
+
+    // ---------- INTERNAL ----------
+
     private fun observeCalendar() {
         viewModelScope.launch {
             combine(
                 dao.observeAllSlipsUnordered(),
                 _currentMonth
             ) { slips, month ->
-                buildCalendarDays(slips, month)
-            }.collect { calendarDays ->
+                cachedSlips = slips
+                month to buildCalendarDays(slips, month)
+            }.collect { (month, calendarDays) ->
+
+                // Reset selection ONLY when month actually changes
+                if (lastEmittedMonth != month) {
+                    _selectedDate.value = null
+                    lastEmittedMonth = month
+                }
+
                 _days.value = calendarDays
-                _selectedDate.value = null
             }
         }
     }

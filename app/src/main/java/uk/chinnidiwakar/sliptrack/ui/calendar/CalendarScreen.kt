@@ -79,7 +79,7 @@ fun CalendarScreen() {
     val viewModel: CalendarViewModel = viewModel(
         factory = CalendarViewModelFactory(context)
     )
-    var isAdjustingPager by remember { mutableStateOf(false) }
+
     val month by viewModel.currentMonth.collectAsState()
     val days by viewModel.days.collectAsState()
 
@@ -112,10 +112,11 @@ fun CalendarScreen() {
 
                 CalendarGrid(
                     month = pageMonth,
-                    days = if (page == 1) days else days, // same size, stable layout
+                    days = viewModel.getDaysForMonth(pageMonth),
                     viewModel = viewModel
                 )
             }
+
 
 
 
@@ -156,24 +157,19 @@ fun CalendarScreen() {
 
 
 
-            LaunchedEffect(pagerState.currentPage) {
-                if (isAdjustingPager) return@LaunchedEffect
-
-                when (pagerState.currentPage) {
+            LaunchedEffect(pagerState.settledPage) {
+                when (pagerState.settledPage) {
                     0 -> {
-                        isAdjustingPager = true
                         viewModel.previousMonth()
                         pagerState.scrollToPage(1)
-                        isAdjustingPager = false
                     }
                     2 -> {
-                        isAdjustingPager = true
                         viewModel.nextMonth()
                         pagerState.scrollToPage(1)
-                        isAdjustingPager = false
                     }
                 }
             }
+
 
         }
     }
