@@ -10,10 +10,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.asStateFlow
+import uk.chinnidiwakar.QuoteRepository
 
 class HomeViewModel(context: Context) : ViewModel() {
 
     private val dao = DatabaseProvider.get(context).slipDao()
+
+    private val _dailyQuote = MutableStateFlow("")
+    val dailyQuote: StateFlow<String> = _dailyQuote.asStateFlow()
 
     private val _elapsedText = MutableStateFlow("0m")
     val elapsedText: StateFlow<String> = _elapsedText
@@ -27,6 +32,7 @@ class HomeViewModel(context: Context) : ViewModel() {
     private var lastRelapseTime = System.currentTimeMillis()
 
     init {
+        _dailyQuote.value = QuoteRepository.getQuoteForToday()
         observeSlips()
         startTimer()
     }

@@ -34,7 +34,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import uk.chinnidiwakar.sliptrack.HomeViewModel
@@ -53,6 +55,7 @@ fun HomeScreen() {
     val elapsedText by viewModel.elapsedText.collectAsState()
     val currentStreak by viewModel.currentStreak.collectAsState()
     val longestStreak by viewModel.longestStreak.collectAsState()
+    val quote by viewModel.dailyQuote.collectAsState()
 
 
 
@@ -89,6 +92,14 @@ fun HomeScreen() {
                             fontSize = 22.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White
+                        )
+
+                        Text(
+                            text = "\"$quote\"",
+                            modifier = Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            fontStyle = FontStyle.Italic
                         )
 
                         Spacer(Modifier.height(24.dp))
