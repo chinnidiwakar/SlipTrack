@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.asStateFlow
-import uk.chinnidiwakar.QuoteRepository
+import uk.chinnidiwakar.sliptrack.QuoteRepository
 
 class HomeViewModel(context: Context) : ViewModel() {
 

@@ -44,8 +44,7 @@ fun SkyTheme(
 
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .height(260.dp)
+            .fillMaxSize()   // ✅ MATCHES HEADER HEIGHT
             .background(Brush.verticalGradient(gradient))
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {

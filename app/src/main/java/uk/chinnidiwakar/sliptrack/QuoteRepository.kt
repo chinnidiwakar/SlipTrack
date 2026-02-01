@@ -1,4 +1,6 @@
-package uk.chinnidiwakar
+package uk.chinnidiwakar.sliptrack
+
+import java.time.LocalDate
 
 object QuoteRepository {
     private val quotes = listOf(
@@ -37,7 +39,7 @@ object QuoteRepository {
 
     fun getQuoteForToday(): String {
         // Uses the day of the year to pick a consistent quote for the whole day
-        val dayOfYear = java.time.LocalDate.now().dayOfYear
+        val dayOfYear = LocalDate.now().dayOfYear
         return quotes[dayOfYear % quotes.size]
     }
 }
