@@ -23,8 +23,8 @@ class InsightsViewModel(context: Context) : ViewModel() {
 
     private fun observeInsights() {
         viewModelScope.launch {
-            dao.observeAllSlips().collect { slips ->
-                _insights.value = computeInsights(slips)
+            dao.observeSlipsOnly().collect { slips ->
+            _insights.value = computeInsights(slips)
             }
         }
     }

@@ -6,6 +6,8 @@ import java.time.temporal.ChronoUnit
 object StreakCalculator {
 
     fun currentStreak(slips: List<SlipEvent>): Int {
+        // We handle filtering in the ViewModel now, so 'slips' here
+        // should already be actual slips only.
         if (slips.isEmpty()) return 0
 
         val zone = ZoneId.systemDefault()
@@ -20,31 +22,30 @@ object StreakCalculator {
     }
 
     fun longestStreak(slips: List<SlipEvent>): Int {
+        // Ensure this list is also only actual slips
         if (slips.size < 2) return 0
 
         val zone = ZoneId.systemDefault()
-
         val dates = slips
             .map { java.time.Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() }
             .distinct()
             .sorted()
 
         var longest = 0
-
         for (i in 1 until dates.size) {
             val gap = ChronoUnit.DAYS.between(dates[i - 1], dates[i]).toInt()
             longest = maxOf(longest, gap)
         }
-
         return longest
     }
 
-    fun averageStreak(slips: List<SlipEvent>): Int {
-        if (slips.size < 2) return 0
+
+    fun averageStreak(events: List<SlipEvent>): Int {
+        val actualSlips = events.filter { !it.isResist } // 👈 Added filter
+        if (actualSlips.size < 2) return 0
 
         val zone = ZoneId.systemDefault()
-
-        val dates = slips
+        val dates = actualSlips
             .map { java.time.Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() }
             .distinct()
             .sorted()
@@ -52,7 +53,6 @@ object StreakCalculator {
         val gaps = (1 until dates.size).map {
             ChronoUnit.DAYS.between(dates[it - 1], dates[it]).toInt()
         }
-
         return gaps.average().toInt()
     }
 }

@@ -1,6 +1,7 @@
 package uk.chinnidiwakar.sliptrack
 
 import android.content.Context
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import uk.chinnidiwakar.sliptrack.utils.formatElapsedTime
@@ -13,7 +14,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.asStateFlow
 import uk.chinnidiwakar.sliptrack.QuoteRepository
 
-class HomeViewModel(context: Context) : ViewModel() {
+class HomeViewModel(private val context: Context) : ViewModel() {
 
     private val dao = DatabaseProvider.get(context).slipDao()
 
@@ -37,18 +38,26 @@ class HomeViewModel(context: Context) : ViewModel() {
         startTimer()
     }
 
+    // Inside HomeViewModel.kt
     private fun observeSlips() {
         viewModelScope.launch {
-            dao.observeAllSlips().collect { slips ->
+            dao.observeAllSlips().collect { allEvents ->
+                // 1. FILTER HERE: Only look at actual slips (isResist == false)
+                val actualSlips = allEvents.filter { !it.isResist }
 
-                if (slips.isNotEmpty()) {
-                    val raw = slips.maxBy { it.timestamp }.timestamp
+                if (actualSlips.isNotEmpty()) {
+                    // Now maxBy only sees real failures
+                    val raw = actualSlips.maxBy { it.timestamp }.timestamp
                     lastRelapseTime = if (raw < 1_000_000_000_000L) raw * 1000 else raw
-
+                } else {
+                    // If there are zero slips, the timer should reflect
+                    // either app install time or a default "start" time
+                    lastRelapseTime = System.currentTimeMillis()
                 }
 
-                val current = StreakCalculator.currentStreak(slips)
-                val longest = StreakCalculator.longestStreak(slips)
+                // 2. Pass the filtered list to the calculator for the numbers
+                val current = StreakCalculator.currentStreak(actualSlips)
+                val longest = StreakCalculator.longestStreak(actualSlips)
 
                 _currentStreak.value = current
                 _longestStreak.value = maxOf(current, longest)
@@ -70,7 +79,48 @@ class HomeViewModel(context: Context) : ViewModel() {
 
     fun logSlip() {
         viewModelScope.launch {
-            dao.insertSlip(SlipEvent(timestamp = System.currentTimeMillis()))
+            dao.insertSlip(
+                SlipEvent(
+                    timestamp = System.currentTimeMillis(),
+                    isResist = false // 👈 Explicitly marked as a failure
+                )
+            )
+        }
+    }
+
+    fun logVictory(level: Int) {
+        viewModelScope.launch {
+            dao.insertSlip(
+                SlipEvent(
+                    timestamp = System.currentTimeMillis(),
+                    isResist = true,
+                    intensity = level
+                )
+            )
+        }
+    }
+
+    // Add this inside your HomeViewModel class
+    fun logEvent(isResist: Boolean, intensity: Int = 0) {
+        viewModelScope.launch {
+            dao.insertSlip(
+                SlipEvent(
+                    timestamp = System.currentTimeMillis(),
+                    isResist = isResist,
+                    intensity = intensity
+                )
+            )
+
+            if (isResist) {
+                val msg = when(intensity) {
+                    1 -> "🌱 Spark extinguished! Good catch."
+                    2 -> "⚔️ Stayed strong through the urge!"
+                    3 -> "🏆 MASSIVE VICTORY! You conquered the pit."
+                    else -> "Victory logged!"
+                }
+                // Use the context passed into the ViewModel
+                android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }

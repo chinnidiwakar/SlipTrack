@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -22,6 +23,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,71 +62,65 @@ fun HomeScreen() {
     val longestStreak by viewModel.longestStreak.collectAsState()
     val quote by viewModel.dailyQuote.collectAsState()
 
+    var showVictoryDialog by remember { mutableStateOf(false) }
+
+    if (showVictoryDialog) {
+        VictoryDialog(
+            onDismiss = { showVictoryDialog = false },
+            onConfirm = { level ->
+                viewModel.logEvent(isResist = true, intensity = level)
+                showVictoryDialog = false
+            }
+        )
+    }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-
-            // --- HEADER BOX ---
+            // --- HEADER BOX (Self-Adjusting) ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(340.dp) // Slightly taller to ensure the row fits
+                    .wrapContentHeight() // 👈 FIX: Adjusts to content height
             ) {
-                // Layer 0: Background
+                // Background fills the space the content creates
                 SkyTheme(
                     streak = currentStreak,
                     modifier = Modifier.matchParentSize()
                 )
 
-                // Layer 1: The Actual Text Content
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = 32.dp) // Avoid status bar area
-                        .zIndex(1f), // FORCES this to the front
+                        .fillMaxWidth()
+                        .padding(top = 32.dp, bottom = 24.dp) // Added bottom padding
+                        .zIndex(1f),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Good day 🌿",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
+                    Text(text = "Good day 🌿", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
 
                     Text(
                         text = "\"$quote\"",
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
-                        color = Color.White, // Force white here too
+                        color = Color.White,
                         fontStyle = FontStyle.Italic
                     )
 
-                    Spacer(Modifier.height(16.dp))
-
-                    StreakRing(progress = (currentStreak.coerceAtMost(30)) / 30f) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = elapsedText,
-                                fontSize = 42.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "since last slip",
-                                fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
+                    // Controlled size for the ring
+                    Box(modifier = Modifier.padding(vertical = 16.dp)) {
+                        StreakRing(progress = (currentStreak.coerceAtMost(30)) / 30f) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(text = elapsedText, fontSize = 38.sp, fontWeight = FontWeight.Bold, color = Color.White) // Slightly smaller font
+                                Text(text = "since last slip", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                            }
                         }
                     }
 
-                    Spacer(Modifier.height(24.dp))
-
-                    // This Row is likely what was getting cut off
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -134,14 +130,13 @@ fun HomeScreen() {
                 }
             }
 
-            // --- BOTTOM CONTENT (Tightened) ---
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 24.dp), // Controlled padding
+                    .padding(horizontal = 20.dp, vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(Modifier.height(24.dp)) // Small gap after the sky header
+                Spacer(Modifier.height(24.dp))
 
                 Text(
                     text = "You're trying — that matters 🤍",
@@ -149,12 +144,22 @@ fun HomeScreen() {
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
 
-                Spacer(Modifier.height(32.dp)) // Gap between text and button
+                Spacer(Modifier.height(32.dp))
+
+                // THE NEW DUAL ACTION SECTION
+                Button(
+                    onClick = { showVictoryDialog = true },
+                    modifier = Modifier.fillMaxWidth().height(60.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Text("I resisted an urge 🛡️", fontSize = 17.sp)
+                }
+
+                Spacer(Modifier.height(12.dp))
 
                 RelapseButton { viewModel.logSlip() }
 
-                // This ensures everything stays pushed toward the top
-                // rather than spreading across the whole screen
                 Spacer(Modifier.weight(1f))
             }
         }
@@ -244,5 +249,56 @@ fun RelapseButton(onClick: () -> Unit) {
     ) {
         Text("I slipped today", fontSize = 17.sp, fontWeight = FontWeight.Medium)
     }
+}
 
+@Composable
+fun UrgeTrackerSection(onResist: (Int) -> Unit, onSlip: () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // THE VICTORY BUTTON (Larger, more positive)
+        Button(
+            onClick = { onResist(2) }, // Default to "Heavy Urge" for now
+            modifier = Modifier.fillMaxWidth().height(64.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)) // Green for Victory
+        ) {
+            Text("I fought an urge 🛡️", fontSize = 18.sp)
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // THE SLIP BUTTON (Secondary)
+        TextButton(onClick = onSlip) {
+            Text(
+                "I slipped today",
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+            )
+        }
+    }
+}
+
+@Composable
+fun VictoryDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("How strong was the urge?") },
+        text = {
+            Column {
+                TextButton(onClick = { onConfirm(1) }) {
+                    Text("🌱 Early Spark (Caught it early)")
+                }
+                TextButton(onClick = { onConfirm(2) }) {
+                    Text("⚔️ Heavy Urge (Stayed strong)")
+                }
+                TextButton(onClick = { onConfirm(3) }) {
+                    Text("🏆 Great Victory (Point of no return)")
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }

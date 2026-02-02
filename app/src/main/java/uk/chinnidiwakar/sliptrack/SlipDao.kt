@@ -9,6 +9,20 @@ import kotlinx.coroutines.flow.Flow   // 👈 add this
 interface SlipDao {
 
     @Insert
+    suspend fun insertEvent(event: SlipEvent)
+
+    // Used for the main streak (only counts actual slips)
+    @Query("SELECT * FROM slips WHERE isResist = 0 ORDER BY timestamp DESC")
+    fun observeSlipsOnly(): Flow<List<SlipEvent>>
+
+    // Used for your new "Victory" stats
+    @Query("SELECT * FROM slips WHERE isResist = 1 ORDER BY timestamp DESC")
+    fun observeResistsOnly(): Flow<List<SlipEvent>>
+
+    @Query("SELECT * FROM slips ORDER BY timestamp DESC")
+    fun observeAllEvents(): Flow<List<SlipEvent>>
+
+    @Insert
     suspend fun insertSlip(event: SlipEvent)
 
     @Query("SELECT * FROM slips ORDER BY timestamp DESC LIMIT 1")
