@@ -23,9 +23,10 @@ fun formatElapsedTime(ms: Long): String {
 }
 
 fun buildDaySummaries(slips: List<SlipEvent>): List<DaySummary> {
-    if (slips.isEmpty()) return emptyList()
+    val actualSlips = slips.filter { !it.isResist }
+    if (actualSlips.isEmpty()) return emptyList()
 
-    val grouped = slips.groupBy {
+    val grouped = actualSlips.groupBy {
         val date = Instant.ofEpochMilli(it.timestamp)
             .atZone(ZoneId.systemDefault())
             .toLocalDate()
@@ -50,11 +51,12 @@ fun buildCalendarDays(
     slips: List<SlipEvent>,
     month: YearMonth
 ): List<CalendarDay> {
+    val actualSlips = slips.filter { !it.isResist }
 
     val zone = ZoneId.systemDefault()
     val daysInMonth = month.lengthOfMonth()
 
-    val counts = slips.groupBy {
+    val counts = actualSlips.groupBy {
         Instant.ofEpochMilli(it.timestamp)
             .atZone(zone)
             .toLocalDate()

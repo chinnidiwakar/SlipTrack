@@ -45,19 +45,25 @@ class HomeViewModel(private val context: Context) : ViewModel() {
                 // 1. FILTER HERE: Only look at actual slips (isResist == false)
                 val actualSlips = allEvents.filter { !it.isResist }
 
-                if (actualSlips.isNotEmpty()) {
-                    // Now maxBy only sees real failures
-                    val raw = actualSlips.maxBy { it.timestamp }.timestamp
-                    lastRelapseTime = if (raw < 1_000_000_000_000L) raw * 1000 else raw
-                } else {
-                    // If there are zero slips, the timer should reflect
-                    // either app install time or a default "start" time
-                    lastRelapseTime = System.currentTimeMillis()
+                val baselineTime = when {
+                    actualSlips.isNotEmpty() -> actualSlips.maxBy { it.timestamp }.timestamp
+                    allEvents.isNotEmpty() -> allEvents.minBy { it.timestamp }.timestamp
+                    else -> null
                 }
 
+                baselineTime?.let { lastRelapseTime = normalizeTimestamp(it) }
+
                 // 2. Pass the filtered list to the calculator for the numbers
-                val current = StreakCalculator.currentStreak(actualSlips)
-                val longest = StreakCalculator.longestStreak(actualSlips)
+                val current = if (actualSlips.isNotEmpty()) {
+                    StreakCalculator.currentStreak(actualSlips)
+                } else {
+                    baselineTime?.let { daysSince(it) } ?: 0
+                }
+                val longest = if (actualSlips.isNotEmpty()) {
+                    StreakCalculator.longestStreak(actualSlips)
+                } else {
+                    current
+                }
 
                 _currentStreak.value = current
                 _longestStreak.value = maxOf(current, longest)
@@ -75,6 +81,18 @@ class HomeViewModel(private val context: Context) : ViewModel() {
                 delay(1000)
             }
         }
+    }
+
+    private fun normalizeTimestamp(raw: Long): Long {
+        return if (raw < 1_000_000_000_000L) raw * 1000 else raw
+    }
+
+    private fun daysSince(rawTimestamp: Long): Int {
+        val zone = java.time.ZoneId.systemDefault()
+        val date = java.time.Instant.ofEpochMilli(normalizeTimestamp(rawTimestamp))
+            .atZone(zone)
+            .toLocalDate()
+        return java.time.temporal.ChronoUnit.DAYS.between(date, java.time.LocalDate.now()).toInt()
     }
 
     fun logSlip() {

@@ -16,7 +16,7 @@ object StreakCalculator {
         val lastSlipDate = slips
             .maxByOrNull { it.timestamp }!!
             .timestamp
-            .let { java.time.Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+            .let { java.time.Instant.ofEpochMilli(normalizeTimestamp(it)).atZone(zone).toLocalDate() }
 
         return ChronoUnit.DAYS.between(lastSlipDate, today).toInt()
     }
@@ -27,7 +27,7 @@ object StreakCalculator {
 
         val zone = ZoneId.systemDefault()
         val dates = slips
-            .map { java.time.Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() }
+            .map { java.time.Instant.ofEpochMilli(normalizeTimestamp(it.timestamp)).atZone(zone).toLocalDate() }
             .distinct()
             .sorted()
 
@@ -46,7 +46,7 @@ object StreakCalculator {
 
         val zone = ZoneId.systemDefault()
         val dates = actualSlips
-            .map { java.time.Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() }
+            .map { java.time.Instant.ofEpochMilli(normalizeTimestamp(it.timestamp)).atZone(zone).toLocalDate() }
             .distinct()
             .sorted()
 
@@ -54,5 +54,9 @@ object StreakCalculator {
             ChronoUnit.DAYS.between(dates[it - 1], dates[it]).toInt()
         }
         return gaps.average().toInt()
+    }
+
+    private fun normalizeTimestamp(raw: Long): Long {
+        return if (raw < 1_000_000_000_000L) raw * 1000 else raw
     }
 }
