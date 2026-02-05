@@ -14,7 +14,7 @@ object DatabaseProvider {
                 AppDatabase::class.java,
                 "sliptrack.db"
             )
-                .fallbackToDestructiveMigration() // 2. Add this to auto-clear old data
+                .addMigrations(AppMigrations.MIGRATION_2_3)
                 .build()
 
             db = instance
