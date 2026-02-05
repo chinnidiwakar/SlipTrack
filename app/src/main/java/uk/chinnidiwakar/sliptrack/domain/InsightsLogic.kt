@@ -8,6 +8,8 @@ import java.time.ZoneId
 
 private const val UNKNOWN_TRIGGER = "Unspecified"
 
+private const val UNKNOWN_TRIGGER = "Unspecified"
+
 data class InsightsData(
     val mostCommonHour: String?,
     val mostCommonDay: String?,

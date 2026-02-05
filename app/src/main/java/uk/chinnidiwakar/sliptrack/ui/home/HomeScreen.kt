@@ -73,6 +73,12 @@ fun HomeScreen() {
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.uiMessages.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     if (showVictoryDialog) {
         TriggerDialog(
             title = "How strong was the urge?",
@@ -80,6 +86,8 @@ fun HomeScreen() {
             onDismiss = { showVictoryDialog = false },
             onConfirm = { level, selectedTrigger ->
                 viewModel.logEvent(isResist = true, intensity = level, triggerLabel = selectedTrigger)
+            onConfirm = { level, trigger ->
+                viewModel.logEvent(isResist = true, intensity = level, trigger = trigger)
                 showVictoryDialog = false
             }
         )
@@ -92,6 +100,8 @@ fun HomeScreen() {
             onDismiss = { showSlipDialog = false },
             onConfirm = { _, selectedTrigger ->
                 viewModel.logSlip(triggerLabel = selectedTrigger)
+            onConfirm = { _, trigger ->
+                viewModel.logSlip(trigger = trigger)
                 showSlipDialog = false
             }
         )

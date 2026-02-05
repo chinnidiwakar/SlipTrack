@@ -96,6 +96,7 @@ class HomeViewModel(
     }
 
     fun logSlip(triggerLabel: String? = null) {
+    fun logSlip() {
         viewModelScope.launch {
             dao.insertSlip(
                 SlipEvent(
@@ -108,6 +109,13 @@ class HomeViewModel(
     }
 
     fun logEvent(isResist: Boolean, intensity: Int = 0, triggerLabel: String? = null) {
+                    isResist = false
+                )
+            )
+        }
+    }
+
+    fun logEvent(isResist: Boolean, intensity: Int = 0) {
         viewModelScope.launch {
             dao.insertSlip(
                 SlipEvent(
@@ -115,6 +123,7 @@ class HomeViewModel(
                     isResist = isResist,
                     intensity = intensity,
                     trigger = triggerLabel
+                    trigger = trigger
                 )
             )
 
