@@ -1,8 +1,5 @@
 package uk.chinnidiwakar.sliptrack.ui.history
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,9 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,9 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import uk.chinnidiwakar.sliptrack.HistoryViewModel
 import uk.chinnidiwakar.sliptrack.HistoryViewModelFactory
-import uk.chinnidiwakar.sliptrack.SlipEvent
-
-// ---------------- HISTORY UI ----------------
 
 @Composable
 fun HistoryScreen() {
@@ -66,16 +57,12 @@ fun HistoryScreen() {
 
             Spacer(Modifier.height(20.dp))
 
-            history.forEachIndexed { index, day ->
+            history.forEach { day ->
                 HistoryRow(day)
             }
         }
-
     }
 }
-
-
-// ---------------- HISTORY CARD ----------------
 
 @Composable
 fun HistoryRow(day: DaySummary) {
@@ -133,35 +120,8 @@ fun HistoryRow(day: DaySummary) {
 }
 
 
-// ---------------- DATA MODEL FOR UI ----------------
-
 data class DaySummary(
     val date: String,
     val relapses: Int,
     val longestStreak: String
 )
-
-fun buildDaySummaries(slips: List<SlipEvent>): List<DaySummary> {
-    val actualSlips = slips.filter { !it.isResist }
-    if (actualSlips.isEmpty()) return emptyList()
-
-    val grouped = actualSlips.groupBy {
-        val date = java.time.Instant.ofEpochMilli(it.timestamp)
-            .atZone(java.time.ZoneId.systemDefault())
-            .toLocalDate()
-        date
-    }
-
-    return grouped.entries
-        .sortedByDescending { it.key }
-        .map { entry ->
-            val dateLabel = entry.key.toString() // e.g. 2026-01-28
-            val count = entry.value.size
-
-            DaySummary(
-                date = dateLabel,
-                relapses = count,
-                longestStreak = "—" // we’ll compute this later properly
-            )
-        }
-}

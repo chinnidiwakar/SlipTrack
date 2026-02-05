@@ -6,6 +6,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -25,6 +26,7 @@ import uk.chinnidiwakar.sliptrack.ui.home.HomeScreen
 import uk.chinnidiwakar.sliptrack.ui.history.HistoryScreen
 import uk.chinnidiwakar.sliptrack.ui.calendar.CalendarScreen
 import uk.chinnidiwakar.sliptrack.ui.insights.InsightsScreen
+import uk.chinnidiwakar.sliptrack.ui.emergency.EmergencyScreen
 
 
 sealed class Screen(val route: String) {
@@ -32,6 +34,7 @@ sealed class Screen(val route: String) {
     object History : Screen("history")
     object Calendar : Screen("calendar")
     object Insights : Screen("insights")
+    object Emergency : Screen("emergency")
 }
 
 @Composable
@@ -50,6 +53,7 @@ fun AppNavigation() {
             composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Calendar.route) { CalendarScreen() }
             composable(Screen.Insights.route) { InsightsScreen() }
+            composable(Screen.Emergency.route) { EmergencyScreen() }
         }
     }
 }
@@ -102,6 +106,13 @@ fun BottomNavigationBar(navController: NavController) {
             onClick = { navController.navigate(Screen.Insights.route) },
             label = { Text("Insights") },
             icon = { Icon(Icons.Default.Analytics, null) }
+        )
+
+        NavigationBarItem(
+            selected = currentRoute == Screen.Emergency.route,
+            onClick = { navController.navigate(Screen.Emergency.route) },
+            label = { Text("SOS") },
+            icon = { Icon(Icons.Default.Warning, null) }
         )
 
     }
