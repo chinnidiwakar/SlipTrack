@@ -32,7 +32,7 @@ fun InsightsScreen() {
     )
 
     val insights by viewModel.insights.collectAsState()
-
+    val weeklyReport by viewModel.weeklyReport.collectAsState()
 
     Surface(color = MaterialTheme.colorScheme.background) {
         Column(
@@ -45,6 +45,11 @@ fun InsightsScreen() {
                 "Insights",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold
+            )
+
+            InsightCard(
+                "Weekly report",
+                "${weeklyReport.cleanDaysThisWeek} clean days • ${weeklyReport.victoriesThisWeek} victories • ${weeklyReport.slipsThisWeek} slips"
             )
 
             if (insights == null) {

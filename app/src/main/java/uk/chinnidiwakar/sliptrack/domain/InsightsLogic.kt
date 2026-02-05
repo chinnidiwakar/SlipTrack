@@ -2,6 +2,11 @@ package uk.chinnidiwakar.sliptrack.domain
 
 import uk.chinnidiwakar.sliptrack.SlipEvent
 import uk.chinnidiwakar.sliptrack.StreakCalculator
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+
+private const val UNKNOWN_TRIGGER = "Unspecified"
 
 private const val UNKNOWN_TRIGGER = "Unspecified"
 
@@ -17,9 +22,9 @@ data class InsightsData(
 fun computeInsights(slips: List<SlipEvent>): InsightsData? {
     if (slips.size < 3) return null
 
-    val zone = java.time.ZoneId.systemDefault()
+    val zone = ZoneId.systemDefault()
     val times = slips.map {
-        java.time.Instant.ofEpochMilli(it.timestamp).atZone(zone)
+        Instant.ofEpochMilli(it.timestamp).atZone(zone)
     }
 
     val mostCommonHour = times
@@ -45,7 +50,7 @@ fun computeInsights(slips: List<SlipEvent>): InsightsData? {
         ?.lowercase()
         ?.replaceFirstChar { it.uppercase() }
 
-    val today = java.time.LocalDate.now()
+    val today = LocalDate.now()
     val thisWeekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1)
     val lastWeekStart = thisWeekStart.minusWeeks(1)
 
