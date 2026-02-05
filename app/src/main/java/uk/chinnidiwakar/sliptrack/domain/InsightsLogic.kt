@@ -3,11 +3,15 @@ package uk.chinnidiwakar.sliptrack.domain
 import uk.chinnidiwakar.sliptrack.SlipEvent
 import uk.chinnidiwakar.sliptrack.StreakCalculator
 
+private const val UNKNOWN_TRIGGER = "Unspecified"
+
 data class InsightsData(
     val mostCommonHour: String?,
     val mostCommonDay: String?,
     val weekComparison: String?,
-    val averageStreak: String?
+    val averageStreak: String?,
+    val topTrigger: String?,
+    val suggestedAction: String?
 )
 
 fun computeInsights(slips: List<SlipEvent>): InsightsData? {
@@ -62,10 +66,39 @@ fun computeInsights(slips: List<SlipEvent>): InsightsData? {
     val avg = StreakCalculator.averageStreak(slips)
     val averageStreak = if (avg > 0) "$avg days" else null
 
+    val topTrigger = slips
+        .map { it.trigger?.trim().orEmpty() }
+        .filter { it.isNotEmpty() }
+        .ifEmpty { listOf(UNKNOWN_TRIGGER) }
+        .groupingBy { it }
+        .eachCount()
+        .maxByOrNull { it.value }
+        ?.key
+
+    val suggestedAction = buildSuggestion(mostCommonHour, topTrigger)
+
     return InsightsData(
         mostCommonHour = mostCommonHour,
         mostCommonDay = mostCommonDay,
         weekComparison = weekComparison,
-        averageStreak = averageStreak
+        averageStreak = averageStreak,
+        topTrigger = topTrigger,
+        suggestedAction = suggestedAction
     )
+}
+
+private fun buildSuggestion(mostCommonHour: String?, topTrigger: String?): String? {
+    val hourPlan = mostCommonHour?.let { "Set a 15-minute buffer routine before $it (walk, shower, journal)." }
+
+    val triggerPlan = when (topTrigger) {
+        null -> null
+        UNKNOWN_TRIGGER -> "Add trigger tags when logging slips to unlock smarter insights."
+        "Stress" -> "High stress is a pattern. Try a 4-7-8 breathing reset when urges spike."
+        "Boredom" -> "Boredom spikes detected. Keep a quick replacement list ready (pushups, walk, call)."
+        "Loneliness" -> "Loneliness is a key trigger. Schedule one social check-in daily this week."
+        "Social media" -> "Social media is a trigger. Add a night-time app limit and mute risky feeds."
+        else -> "Top trigger: $topTrigger. Create a short pre-commit plan for that situation."
+    }
+
+    return listOfNotNull(triggerPlan, hourPlan).joinToString(" ").ifBlank { null }
 }

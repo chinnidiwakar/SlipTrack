@@ -112,7 +112,8 @@ class HomeViewModel(
                 SlipEvent(
                     timestamp = System.currentTimeMillis(),
                     isResist = isResist,
-                    intensity = intensity
+                    intensity = intensity,
+                    trigger = trigger
                 )
             )
 

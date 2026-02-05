@@ -65,6 +65,13 @@ fun HomeScreen() {
     val quote by viewModel.dailyQuote.collectAsState()
 
     var showVictoryDialog by remember { mutableStateOf(false) }
+    var showSlipDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.uiMessages.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.uiMessages.collect { message ->
@@ -73,11 +80,25 @@ fun HomeScreen() {
     }
 
     if (showVictoryDialog) {
-        VictoryDialog(
+        TriggerDialog(
+            title = "How strong was the urge?",
+            actionLabel = "Victory",
             onDismiss = { showVictoryDialog = false },
-            onConfirm = { level ->
-                viewModel.logEvent(isResist = true, intensity = level)
+            onConfirm = { level, trigger ->
+                viewModel.logEvent(isResist = true, intensity = level, trigger = trigger)
                 showVictoryDialog = false
+            }
+        )
+    }
+
+    if (showSlipDialog) {
+        TriggerDialog(
+            title = "What triggered the slip?",
+            actionLabel = "Slip",
+            onDismiss = { showSlipDialog = false },
+            onConfirm = { _, trigger ->
+                viewModel.logSlip(trigger = trigger)
+                showSlipDialog = false
             }
         )
     }
@@ -166,7 +187,7 @@ fun HomeScreen() {
 
                 Spacer(Modifier.height(12.dp))
 
-                RelapseButton { viewModel.logSlip() }
+                RelapseButton { showSlipDialog = true }
 
                 Spacer(Modifier.weight(1f))
             }
@@ -284,27 +305,40 @@ fun UrgeTrackerSection(onResist: (Int) -> Unit, onSlip: () -> Unit) {
 }
 
 @Composable
-fun VictoryDialog(
+fun TriggerDialog(
+    title: String,
+    actionLabel: String,
     onDismiss: () -> Unit,
-    onConfirm: (Int) -> Unit
+    onConfirm: (Int, String?) -> Unit
 ) {
+    var selectedIntensity by remember { mutableStateOf(2) }
+    var selectedTrigger by remember { mutableStateOf<String?>(null) }
+    val triggerOptions = listOf("Stress", "Boredom", "Loneliness", "Social media", "Fatigue", "Other")
+
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("How strong was the urge?") },
+        title = { Text(title) },
         text = {
-            Column {
-                TextButton(onClick = { onConfirm(1) }) {
-                    Text("🌱 Early Spark (Caught it early)")
-                }
-                TextButton(onClick = { onConfirm(2) }) {
-                    Text("⚔️ Heavy Urge (Stayed strong)")
-                }
-                TextButton(onClick = { onConfirm(3) }) {
-                    Text("🏆 Great Victory (Point of no return)")
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Intensity")
+                TextButton(onClick = { selectedIntensity = 1 }) { Text(if (selectedIntensity == 1) "✅ 🌱 Early Spark" else "🌱 Early Spark") }
+                TextButton(onClick = { selectedIntensity = 2 }) { Text(if (selectedIntensity == 2) "✅ ⚔️ Heavy Urge" else "⚔️ Heavy Urge") }
+                TextButton(onClick = { selectedIntensity = 3 }) { Text(if (selectedIntensity == 3) "✅ 🏆 Near Miss" else "🏆 Near Miss") }
+
+                Spacer(Modifier.height(8.dp))
+                Text("Trigger")
+                triggerOptions.forEach { option ->
+                    TextButton(onClick = { selectedTrigger = option }) {
+                        Text(if (selectedTrigger == option) "✅ $option" else option)
+                    }
                 }
             }
         },
-        confirmButton = {},
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selectedIntensity, selectedTrigger) }) {
+                Text("Log $actionLabel")
+            }
+        },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }

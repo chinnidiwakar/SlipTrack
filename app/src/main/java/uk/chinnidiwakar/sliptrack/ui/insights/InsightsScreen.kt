@@ -70,6 +70,14 @@ fun InsightsScreen() {
                     InsightCard("Typical streak length", value.toString())
                 }
 
+                insights?.topTrigger?.let { value: String ->
+                    InsightCard("Top trigger", value)
+                }
+
+                insights?.suggestedAction?.let { value: String ->
+                    InsightCard("Suggested next step", value)
+                }
+
             }
         }
     }
