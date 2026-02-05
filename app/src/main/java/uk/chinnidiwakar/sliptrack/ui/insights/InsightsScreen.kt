@@ -1,6 +1,5 @@
 package uk.chinnidiwakar.sliptrack.ui.insights
 
-import android.R.attr.value
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
