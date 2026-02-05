@@ -11,7 +11,8 @@ class HomeViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
-            return HomeViewModel(context.applicationContext) as T
+            val dao = DatabaseProvider.get(context.applicationContext).slipDao()
+            return HomeViewModel(dao) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

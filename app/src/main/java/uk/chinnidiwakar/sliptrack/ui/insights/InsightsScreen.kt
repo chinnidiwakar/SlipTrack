@@ -1,6 +1,5 @@
 package uk.chinnidiwakar.sliptrack.ui.insights
 
-import android.R.attr.value
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -69,6 +68,14 @@ fun InsightsScreen() {
 
                 insights?.averageStreak?.let { value: String ->
                     InsightCard("Typical streak length", value.toString())
+                }
+
+                insights?.topTrigger?.let { value: String ->
+                    InsightCard("Top trigger", value)
+                }
+
+                insights?.suggestedAction?.let { value: String ->
+                    InsightCard("Suggested next step", value)
                 }
 
             }
