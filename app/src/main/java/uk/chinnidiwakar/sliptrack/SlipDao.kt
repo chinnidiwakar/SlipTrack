@@ -2,6 +2,7 @@ package uk.chinnidiwakar.sliptrack
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow   // 👈 add this
 
@@ -22,6 +23,9 @@ interface SlipDao {
     @Insert
     suspend fun insertSlip(event: SlipEvent)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(events: List<SlipEvent>)
+
     @Query("SELECT * FROM slips ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastSlip(): SlipEvent?
 
@@ -40,4 +44,7 @@ interface SlipDao {
 
     @Query("SELECT * FROM slips")
     fun observeAllSlipsUnordered(): Flow<List<SlipEvent>>
+
+    @Query("DELETE FROM slips")
+    suspend fun clearAll()
 }

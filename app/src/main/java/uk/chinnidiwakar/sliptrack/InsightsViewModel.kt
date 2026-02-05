@@ -1,6 +1,7 @@
 package uk.chinnidiwakar.sliptrack
 
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +15,8 @@ import uk.chinnidiwakar.sliptrack.domain.computeWeeklyReport
 
 class InsightsViewModel(context: Context) : ViewModel() {
 
-    private val dao = DatabaseProvider.get(context).slipDao()
+    private val appContext = context.applicationContext
+    private val dao = DatabaseProvider.get(appContext).slipDao()
 
     private val _insights = MutableStateFlow<InsightsData?>(null)
     val insights: StateFlow<InsightsData?> = _insights.asStateFlow()
@@ -24,6 +26,22 @@ class InsightsViewModel(context: Context) : ViewModel() {
 
     init {
         observeInsights()
+    }
+
+
+    suspend fun exportData(uri: Uri): Int {
+        val events = dao.getAllSlipsUnordered()
+        val json = DataBackupManager.exportToJson(events)
+        DataBackupManager.writeToUri(appContext, uri, json)
+        return events.size
+    }
+
+    suspend fun importData(uri: Uri): Int {
+        val json = DataBackupManager.readFromUri(appContext, uri)
+        val events = DataBackupManager.parseJson(json)
+        dao.clearAll()
+        dao.insertAll(events)
+        return events.size
     }
 
     private fun observeInsights() {

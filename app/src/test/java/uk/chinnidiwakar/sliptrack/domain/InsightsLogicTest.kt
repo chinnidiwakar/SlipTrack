@@ -39,10 +39,6 @@ class InsightsLogicTest {
             SlipEvent(timestamp = epochMillis(7, 21), trigger = "Stress"),
             SlipEvent(timestamp = epochMillis(3, 21), trigger = "Boredom"),
             SlipEvent(timestamp = epochMillis(1, 10), trigger = "Stress")
-            SlipEvent(timestamp = epochMillis(10, 21)),
-            SlipEvent(timestamp = epochMillis(7, 21)),
-            SlipEvent(timestamp = epochMillis(3, 21)),
-            SlipEvent(timestamp = epochMillis(1, 10))
         )
 
         val insights = computeInsights(slips)
@@ -67,7 +63,5 @@ class InsightsLogicTest {
         assertEquals(1, report.slipsThisWeek)
         assertEquals(2, report.victoriesThisWeek)
         assertTrue(report.cleanDaysThisWeek >= 0)
-    }
-
     }
 }
