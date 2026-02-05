@@ -73,6 +73,12 @@ fun HomeScreen() {
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.uiMessages.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     if (showVictoryDialog) {
         TriggerDialog(
             title = "How strong was the urge?",

@@ -95,19 +95,18 @@ class HomeViewModel(
         return java.time.temporal.ChronoUnit.DAYS.between(date, java.time.LocalDate.now()).toInt()
     }
 
-    fun logSlip(trigger: String? = null) {
+    fun logSlip() {
         viewModelScope.launch {
             dao.insertSlip(
                 SlipEvent(
                     timestamp = System.currentTimeMillis(),
-                    isResist = false,
-                    trigger = trigger
+                    isResist = false
                 )
             )
         }
     }
 
-    fun logEvent(isResist: Boolean, intensity: Int = 0, trigger: String? = null) {
+    fun logEvent(isResist: Boolean, intensity: Int = 0) {
         viewModelScope.launch {
             dao.insertSlip(
                 SlipEvent(
@@ -126,8 +125,6 @@ class HomeViewModel(
                     else -> "Victory logged!"
                 }
                 _uiMessages.emit(msg)
-            } else {
-                _uiMessages.emit("Slip logged. Restarting with awareness 💛")
             }
         }
     }

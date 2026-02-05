@@ -35,10 +35,10 @@ class InsightsLogicTest {
     @Test
     fun computeInsights_populatesAllFieldsForValidData() {
         val slips = listOf(
-            SlipEvent(timestamp = epochMillis(10, 21), trigger = "Stress"),
-            SlipEvent(timestamp = epochMillis(7, 21), trigger = "Stress"),
-            SlipEvent(timestamp = epochMillis(3, 21), trigger = "Boredom"),
-            SlipEvent(timestamp = epochMillis(1, 10), trigger = "Stress")
+            SlipEvent(timestamp = epochMillis(10, 21)),
+            SlipEvent(timestamp = epochMillis(7, 21)),
+            SlipEvent(timestamp = epochMillis(3, 21)),
+            SlipEvent(timestamp = epochMillis(1, 10))
         )
 
         val insights = computeInsights(slips)
@@ -47,7 +47,5 @@ class InsightsLogicTest {
         assertEquals("9 PM", insights?.mostCommonHour)
         assertTrue(insights?.mostCommonDay?.isNotBlank() == true)
         assertTrue(insights?.averageStreak?.contains("days") == true)
-        assertEquals("Stress", insights?.topTrigger)
-        assertTrue(insights?.suggestedAction?.isNotBlank() == true)
     }
 }
