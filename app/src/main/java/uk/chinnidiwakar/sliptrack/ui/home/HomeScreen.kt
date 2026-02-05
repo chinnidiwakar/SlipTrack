@@ -79,11 +79,16 @@ fun HomeScreen() {
             actionLabel = "Victory",
             onDismiss = { showVictoryDialog = false },
             onConfirm = { level, selectedTrigger ->
-                viewModel.logEvent(isResist = true, intensity = level, triggerLabel = selectedTrigger)
+                viewModel.logEvent(
+                    isResist = true,
+                    intensity = level,
+                    triggerLabel = selectedTrigger
+                )
                 showVictoryDialog = false
             }
         )
     }
+
 
     if (showSlipDialog) {
         TriggerDialog(
@@ -96,6 +101,7 @@ fun HomeScreen() {
             }
         )
     }
+
 
     Surface(
         modifier = Modifier.fillMaxSize(),

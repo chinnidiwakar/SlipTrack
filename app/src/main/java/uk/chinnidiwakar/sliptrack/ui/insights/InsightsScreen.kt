@@ -133,6 +133,14 @@ fun InsightsScreen() {
                     InsightCard("Suggested next step", value)
                 }
 
+                insights?.topTrigger?.let { value: String ->
+                    InsightCard("Top trigger", value)
+                }
+
+                insights?.suggestedAction?.let { value: String ->
+                    InsightCard("Suggested next step", value)
+                }
+
             }
         }
     }

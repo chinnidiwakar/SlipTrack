@@ -18,6 +18,7 @@ class HomeViewModel(
     private val dao: SlipDao
 ) : ViewModel() {
 
+
     private val _dailyQuote = MutableStateFlow("")
     val dailyQuote: StateFlow<String> = _dailyQuote.asStateFlow()
 
@@ -104,10 +105,15 @@ class HomeViewModel(
                     trigger = triggerLabel
                 )
             )
+            _uiMessages.emit("Slip logged. Restarting with awareness 💛")
         }
     }
 
-    fun logEvent(isResist: Boolean, intensity: Int = 0, triggerLabel: String? = null) {
+    fun logEvent(
+        isResist: Boolean,
+        intensity: Int = 0,
+        triggerLabel: String? = null
+    ) {
         viewModelScope.launch {
             dao.insertSlip(
                 SlipEvent(
@@ -126,8 +132,6 @@ class HomeViewModel(
                     else -> "Victory logged!"
                 }
                 _uiMessages.emit(msg)
-            } else {
-                _uiMessages.emit("Slip logged. Restarting with awareness 💛")
             }
         }
     }

@@ -64,5 +64,4 @@ class InsightsLogicTest {
         assertEquals(2, report.victoriesThisWeek)
         assertTrue(report.cleanDaysThisWeek >= 0)
     }
-
 }
