@@ -1,6 +1,5 @@
 package uk.chinnidiwakar.sliptrack.ui.insights
 
-import android.R.attr.value
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,7 +32,7 @@ fun InsightsScreen() {
     )
 
     val insights by viewModel.insights.collectAsState()
-
+    val weeklyReport by viewModel.weeklyReport.collectAsState()
 
     Surface(color = MaterialTheme.colorScheme.background) {
         Column(
@@ -46,6 +45,11 @@ fun InsightsScreen() {
                 "Insights",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold
+            )
+
+            InsightCard(
+                "Weekly report",
+                "${weeklyReport.cleanDaysThisWeek} clean days • ${weeklyReport.victoriesThisWeek} victories • ${weeklyReport.slipsThisWeek} slips"
             )
 
             if (insights == null) {
@@ -69,6 +73,14 @@ fun InsightsScreen() {
 
                 insights?.averageStreak?.let { value: String ->
                     InsightCard("Typical streak length", value.toString())
+                }
+
+                insights?.topTrigger?.let { value: String ->
+                    InsightCard("Top trigger", value)
+                }
+
+                insights?.suggestedAction?.let { value: String ->
+                    InsightCard("Suggested next step", value)
                 }
 
             }
