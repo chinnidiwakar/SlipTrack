@@ -28,6 +28,9 @@ interface SlipDao {
     @Query("SELECT * FROM slips ORDER BY timestamp DESC LIMIT 1")
     suspend fun getLastSlip(): SlipEvent?
 
+    @Query("SELECT * FROM slips WHERE isResist = 0 ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLastActualSlip(): SlipEvent?
+
     @Query("SELECT * FROM slips ORDER BY timestamp DESC")
     suspend fun getAllSlips(): List<SlipEvent>
 
