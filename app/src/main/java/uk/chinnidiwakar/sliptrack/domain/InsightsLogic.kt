@@ -19,6 +19,12 @@ data class InsightsData(
     val suggestedAction: String?
 )
 
+data class WeeklyReport(
+    val slipsThisWeek: Int,
+    val victoriesThisWeek: Int,
+    val cleanDaysThisWeek: Int
+)
+
 fun computeInsights(slips: List<SlipEvent>): InsightsData? {
     if (slips.size < 3) return null
 
@@ -89,6 +95,34 @@ fun computeInsights(slips: List<SlipEvent>): InsightsData? {
         averageStreak = averageStreak,
         topTrigger = topTrigger,
         suggestedAction = suggestedAction
+    )
+}
+
+fun computeWeeklyReport(allEvents: List<SlipEvent>): WeeklyReport {
+    val zone = ZoneId.systemDefault()
+    val today = LocalDate.now()
+    val weekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1)
+
+    val eventsThisWeek = allEvents.filter {
+        Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() >= weekStart
+    }
+
+    val slipsThisWeek = eventsThisWeek.count { !it.isResist }
+    val victoriesThisWeek = eventsThisWeek.count { it.isResist }
+
+    val slipDates = eventsThisWeek
+        .filter { !it.isResist }
+        .map { Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() }
+        .toSet()
+
+    val cleanDaysThisWeek = (0..today.dayOfWeek.value - 1)
+        .map { weekStart.plusDays(it.toLong()) }
+        .count { it !in slipDates }
+
+    return WeeklyReport(
+        slipsThisWeek = slipsThisWeek,
+        victoriesThisWeek = victoriesThisWeek,
+        cleanDaysThisWeek = cleanDaysThisWeek
     )
 }
 

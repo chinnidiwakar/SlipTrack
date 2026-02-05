@@ -35,6 +35,10 @@ class InsightsLogicTest {
     @Test
     fun computeInsights_populatesAllFieldsForValidData() {
         val slips = listOf(
+            SlipEvent(timestamp = epochMillis(10, 21), trigger = "Stress"),
+            SlipEvent(timestamp = epochMillis(7, 21), trigger = "Stress"),
+            SlipEvent(timestamp = epochMillis(3, 21), trigger = "Boredom"),
+            SlipEvent(timestamp = epochMillis(1, 10), trigger = "Stress")
             SlipEvent(timestamp = epochMillis(10, 21)),
             SlipEvent(timestamp = epochMillis(7, 21)),
             SlipEvent(timestamp = epochMillis(3, 21)),
@@ -47,5 +51,23 @@ class InsightsLogicTest {
         assertEquals("9 PM", insights?.mostCommonHour)
         assertTrue(insights?.mostCommonDay?.isNotBlank() == true)
         assertTrue(insights?.averageStreak?.contains("days") == true)
+        assertEquals("Stress", insights?.topTrigger)
+        assertTrue(insights?.suggestedAction?.isNotBlank() == true)
+    }
+    @Test
+    fun computeWeeklyReport_countsWeeklySlipsVictoriesAndCleanDays() {
+        val report = computeWeeklyReport(
+            listOf(
+                SlipEvent(timestamp = epochMillis(1, 10), isResist = false),
+                SlipEvent(timestamp = epochMillis(1, 12), isResist = true),
+                SlipEvent(timestamp = epochMillis(0, 9), isResist = true)
+            )
+        )
+
+        assertEquals(1, report.slipsThisWeek)
+        assertEquals(2, report.victoriesThisWeek)
+        assertTrue(report.cleanDaysThisWeek >= 0)
+    }
+
     }
 }

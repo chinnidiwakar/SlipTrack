@@ -84,6 +84,8 @@ fun HomeScreen() {
             title = "How strong was the urge?",
             actionLabel = "Victory",
             onDismiss = { showVictoryDialog = false },
+            onConfirm = { level, selectedTrigger ->
+                viewModel.logEvent(isResist = true, intensity = level, triggerLabel = selectedTrigger)
             onConfirm = { level, trigger ->
                 viewModel.logEvent(isResist = true, intensity = level, trigger = trigger)
                 showVictoryDialog = false
@@ -96,6 +98,8 @@ fun HomeScreen() {
             title = "What triggered the slip?",
             actionLabel = "Slip",
             onDismiss = { showSlipDialog = false },
+            onConfirm = { _, selectedTrigger ->
+                viewModel.logSlip(triggerLabel = selectedTrigger)
             onConfirm = { _, trigger ->
                 viewModel.logSlip(trigger = trigger)
                 showSlipDialog = false
