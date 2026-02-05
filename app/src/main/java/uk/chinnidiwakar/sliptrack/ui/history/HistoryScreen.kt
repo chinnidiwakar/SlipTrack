@@ -142,9 +142,10 @@ data class DaySummary(
 )
 
 fun buildDaySummaries(slips: List<SlipEvent>): List<DaySummary> {
-    if (slips.isEmpty()) return emptyList()
+    val actualSlips = slips.filter { !it.isResist }
+    if (actualSlips.isEmpty()) return emptyList()
 
-    val grouped = slips.groupBy {
+    val grouped = actualSlips.groupBy {
         val date = java.time.Instant.ofEpochMilli(it.timestamp)
             .atZone(java.time.ZoneId.systemDefault())
             .toLocalDate()
@@ -164,4 +165,3 @@ fun buildDaySummaries(slips: List<SlipEvent>): List<DaySummary> {
             )
         }
 }
-
