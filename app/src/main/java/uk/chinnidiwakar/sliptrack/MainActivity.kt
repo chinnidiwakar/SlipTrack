@@ -3,13 +3,14 @@ package uk.chinnidiwakar.sliptrack
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import uk.chinnidiwakar.sliptrack.navigation.AppNavigation
 import uk.chinnidiwakar.sliptrack.ui.theme.RelapseTrackerTheme
-import java.util.concurrent.TimeUnit
 import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,13 +18,15 @@ class MainActivity : ComponentActivity() {
 
         // 1. Setup WorkManager BEFORE setContent
         setupMilestoneWork()
-
+        enableEdgeToEdge()
         setContent {
             RelapseTrackerTheme {
                 AppNavigation()
             }
         }
     }
+
+
 
     private fun setupMilestoneWork() {
         val streakRequest = PeriodicWorkRequestBuilder<StreakWorker>(24, TimeUnit.HOURS)

@@ -44,6 +44,11 @@ class CalendarViewModel(context: Context) : ViewModel() {
         _selectedDate.value = date
     }
 
+    fun getDayData(date: LocalDate): CalendarDay? {
+        if (YearMonth.from(date) != _currentMonth.value) return null
+        return _days.value.firstOrNull { it.day == date.dayOfMonth }
+    }
+
     fun previousMonth() {
         _currentMonth.value = _currentMonth.value.minusMonths(1)
     }

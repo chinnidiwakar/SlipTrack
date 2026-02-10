@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -26,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,36 +41,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import uk.chinnidiwakar.sliptrack.CalendarViewModel
 import uk.chinnidiwakar.sliptrack.CalendarViewModelFactory
-import uk.chinnidiwakar.sliptrack.ui.theme.AccentButton
 import java.time.LocalDate
 import java.time.YearMonth
-import androidx.compose.runtime.setValue
 
 
 // ================= HEADER =================
-
-@Composable
-private fun CalendarHeader(month: YearMonth) {
-    Column {
-        Text(
-            text = month.month.name.lowercase()
-                .replaceFirstChar { it.uppercase() } + " ${month.year}",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Medium,
-            letterSpacing = 0.6.sp
-        )
-
-        Spacer(Modifier.height(6.dp))
-
-        Text(
-            text = "Patterns, not judgement",
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.55f)
-        )
-    }
-}
-
-// ================= SCREEN =================
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -82,16 +57,14 @@ fun CalendarScreen() {
 
     val month by viewModel.currentMonth.collectAsState()
     val days by viewModel.days.collectAsState()
-
-// Move this here and use 'month' as a key
-
+    val selectedDate by viewModel.selectedDate.collectAsState()
 
     val pagerState = rememberPagerState(
         initialPage = 1,
         pageCount = { 3 }
     )
 
-
+    // Using Surface as the root container
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -99,90 +72,109 @@ fun CalendarScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp)
+                .statusBarsPadding() // 👈 Move padding here to affect the whole screen
+                .padding(horizontal = 20.dp)
         ) {
-
+            // Updated Header: Removed fillMaxSize()
             CalendarHeader(month)
 
             Spacer(Modifier.height(16.dp))
 
-            HorizontalPager(state = pagerState) { page ->
-                val pageMonth = remember(page, month) {
-                    when (page) {
-                        0 -> month.minusMonths(1)
-                        1 -> month
-                        else -> month.plusMonths(1)
+            // The Pager needs a specific weight or height to show up correctly
+            Box(modifier = Modifier.weight(1f)) {
+                HorizontalPager(state = pagerState) { page ->
+                    val pageMonth = remember(page, month) {
+                        when (page) {
+                            0 -> month.minusMonths(1)
+                            1 -> month
+                            else -> month.plusMonths(1)
+                        }
                     }
-                }
 
-                // FIX: If it's the current month, use the LIVE data from the ViewModel state
-                // If it's a side page, calculate it from the cache
-                val displayDays = if (pageMonth == month) {
-                    days
-                } else {
-                    remember(pageMonth) { viewModel.getDaysForMonth(pageMonth) }
-                }
+                    val displayDays = if (pageMonth == month) {
+                        days
+                    } else {
+                        remember(pageMonth) { viewModel.getDaysForMonth(pageMonth) }
+                    }
 
-                CalendarGrid(
-                    month = pageMonth,
-                    days = displayDays,
-                    viewModel = viewModel
-                )
+                    CalendarGrid(
+                        month = pageMonth,
+                        days = displayDays,
+                        viewModel = viewModel,
+                        selectedDate = selectedDate
+                    )
+                }
             }
 
-
-
-
-            val selectedDate by viewModel.selectedDate.collectAsState()
-
-// Observe 'days' to ensure the count updates when DB loads
-            val relapseCount = remember(selectedDate, days) {
-                viewModel.getRelapseCount(selectedDate)
+            // Bottom Info Card
+            val selectedDayData = remember(selectedDate, days) {
+                viewModel.getDayData(selectedDate)
             }
 
-            Spacer(Modifier.height(20.dp))
+            val relapses = selectedDayData?.relapses ?: 0
+            val resisted = selectedDayData?.urgesResisted ?: 0
+
+            Spacer(Modifier.height(16.dp))
 
             Surface(
-                tonalElevation = 1.dp,
-                shape = RoundedCornerShape(16.dp)
+                tonalElevation = 2.dp,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
             ) {
-                Column(Modifier.padding(16.dp).fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
                     Text(
-                        text = if (relapseCount > 0) "Relapse details" else "Day Summary",
-                        fontWeight = FontWeight.Medium,
-                        color = if (relapseCount > 0) Color(0xFFE57373) else MaterialTheme.colorScheme.primary
+                        text = when {
+                            relapses > 0 -> "Relapse recorded"
+                            resisted > 0 -> "Battle Won!"
+                            else -> "Clean Day"
+                        },
+                        fontWeight = FontWeight.Bold,
+                        color = when {
+                            relapses > 0 -> Color(0xFFE57373)
+                            resisted > 0 -> Color(0xFFD4AF37)
+                            else -> Color(0xFF66BB6A)
+                        }
                     )
-
-                    Spacer(Modifier.height(6.dp))
-
-                    // No more red error here because selectedDate is not null!
-                    Text(text = "${selectedDate.dayOfMonth} ${selectedDate.month.name.lowercase().replaceFirstChar { it.uppercase() }}")
-
-                    Text(
-                        text = if (relapseCount > 0) "Relapses: $relapseCount" else "No relapses recorded",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
+                    Text(text = "Slips: $relapses | Urges Resisted: $resisted", fontSize = 12.sp)
                 }
             }
-
-
-
-            LaunchedEffect(pagerState.settledPage) {
-                when (pagerState.settledPage) {
-                    0 -> {
-                        viewModel.previousMonth()
-                        pagerState.scrollToPage(1)
-                    }
-                    2 -> {
-                        viewModel.nextMonth()
-                        pagerState.scrollToPage(1)
-                    }
-                }
-            }
-
-
         }
+    }
+
+    // Month Swapping Logic
+    LaunchedEffect(pagerState.settledPage) {
+        when (pagerState.settledPage) {
+            0 -> {
+                viewModel.previousMonth()
+                pagerState.scrollToPage(1)
+            }
+            2 -> {
+                viewModel.nextMonth()
+                pagerState.scrollToPage(1)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarHeader(month: YearMonth) {
+    // REMOVED: fillMaxSize() and statusBarsPadding() from here
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Text(
+            text = month.month.name.lowercase()
+                .replaceFirstChar { it.uppercase() } + " ${month.year}",
+            fontWeight = FontWeight.Bold, // Made bolder for the new UI
+            fontSize = 24.sp,
+            letterSpacing = 0.6.sp
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        Text(
+            text = "Patterns, not judgement",
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+        )
     }
 }
 
@@ -216,7 +208,8 @@ private fun WeekdayHeader() {
 private fun CalendarGrid(
     month: YearMonth,
     days: List<CalendarDay>,
-    viewModel: CalendarViewModel
+    viewModel: CalendarViewModel,
+    selectedDate: LocalDate
 ) {
     val firstDayOffset = (month.atDay(1).dayOfWeek.value + 6) % 7
     val totalCells = days.size + firstDayOffset
@@ -242,13 +235,13 @@ private fun CalendarGrid(
                             // guard against invalid day numbers (e.g. Feb 29 in non-leap year)
                             if (day.day <= month.lengthOfMonth()) {
                                 val date = month.atDay(day.day)
-                                val selectedDate by viewModel.selectedDate.collectAsState()
                                 val isSelected = date == selectedDate
 
                                 PremiumDayCell(
                                     date = date,
                                     relapses = day.relapses,
-                                    isSelected = isSelected, // Add this parameter
+                                    urgesResisted = day.urgesResisted, // Pass it here
+                                    isSelected = isSelected,
                                     onClick = { viewModel.selectDate(date) }
                                 )
                             } else {
@@ -270,29 +263,45 @@ private fun CalendarGrid(
 private fun PremiumDayCell(
     date: LocalDate,
     relapses: Int,
-    isSelected: Boolean, // Added this parameter
+    urgesResisted: Int, // Add this
+    isSelected: Boolean,
     onClick: () -> Unit
 ) {
     val isToday = date == LocalDate.now()
+    val isFuture = date.isAfter(LocalDate.now())
     val haptic = LocalHapticFeedback.current
+
+    // Logic for the color of the day
+    val cellColor = when {
+        isFuture -> MaterialTheme.colorScheme.surface // Future is plain surface
+        relapses > 0 -> MaterialTheme.colorScheme.error.copy(alpha = 0.2f) // Light Red for slips
+        urgesResisted > 0 -> Color(0xFFFFD700).copy(alpha = 0.3f) // Gold for resisting urges
+        else -> Color(0xFF66BB6A).copy(alpha = 0.2f) // Soft Green for smooth sailing
+    }
+
+    val contentColor = when {
+        isFuture -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+        relapses > 0 -> MaterialTheme.colorScheme.error
+        urgesResisted > 0 -> Color(0xFFD4AF37) // Darker Gold for text
+        else -> Color(0xFF2E7D32) // Darker Green for text
+    }
 
     Box(
         modifier = Modifier
             .size(44.dp)
             .background(
-                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                else MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(14.dp)
+                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else cellColor,
+                shape = RoundedCornerShape(12.dp)
             )
             .border(
                 border = when {
                     isSelected -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                    isToday -> BorderStroke(1.5.dp, AccentButton.copy(alpha = 0.5f))
-                    else -> BorderStroke(0.dp, Color.Transparent)
+                    isToday -> BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                    else -> BorderStroke(1.dp, Color.Transparent)
                 },
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(12.dp)
             )
-            .clickable {
+            .clickable(enabled = !isFuture) {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             },
@@ -301,27 +310,24 @@ private fun PremiumDayCell(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = date.dayOfMonth.toString(),
-                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                fontSize = 14.sp,
+                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Medium,
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else contentColor
             )
 
-            if (relapses > 0) {
-                Spacer(Modifier.height(4.dp))
-                Box(
-                    modifier = Modifier
-                        .height(3.dp)
-                        .width((relapses.coerceAtMost(3) * 8).dp)
-                        .background(Color(0xFFE57373), RoundedCornerShape(100))
-                )
+            // Visual indicator for slips (little dots)
+            if (relapses > 0 && !isSelected) {
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    repeat(relapses.coerceAtMost(3)) {
+                        Box(Modifier.size(4.dp).background(contentColor, RoundedCornerShape(100)))
+                    }
+                }
             }
         }
     }
 }
-
-
-// ================= MODEL =================
-
 data class CalendarDay(
     val day: Int,
-    val relapses: Int
+    val relapses: Int,
+    val urgesResisted: Int = 0 // Add this!
 )

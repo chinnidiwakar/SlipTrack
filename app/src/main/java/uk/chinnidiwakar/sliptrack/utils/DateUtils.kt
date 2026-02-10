@@ -51,22 +51,24 @@ fun buildCalendarDays(
     slips: List<SlipEvent>,
     month: YearMonth
 ): List<CalendarDay> {
-    val actualSlips = slips.filter { !it.isResist }
-
     val zone = ZoneId.systemDefault()
     val daysInMonth = month.lengthOfMonth()
 
-    val counts = actualSlips.groupBy {
+    // Group EVERY event (Slips and Resists) by date
+    val groupedByDate = slips.groupBy {
         Instant.ofEpochMilli(it.timestamp)
             .atZone(zone)
             .toLocalDate()
-    }.mapValues { it.value.size }
+    }
 
     return (1..daysInMonth).map { dayNum ->
         val date = month.atDay(dayNum)
+        val dayEvents = groupedByDate[date] ?: emptyList()
+
         CalendarDay(
             day = dayNum,
-            relapses = counts[date] ?: 0
+            relapses = dayEvents.count { !it.isResist }, // Count only real slips
+            urgesResisted = dayEvents.count { it.isResist } // Count successful resistances!
         )
     }
 }

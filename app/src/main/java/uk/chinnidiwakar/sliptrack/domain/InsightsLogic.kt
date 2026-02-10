@@ -14,7 +14,8 @@ data class InsightsData(
     val weekComparison: String?,
     val averageStreak: String?,
     val topTrigger: String?,
-    val suggestedAction: String?
+    val suggestedAction: String?,
+    val willpowerScore: Int
 )
 
 data class WeeklyReport(
@@ -22,6 +23,13 @@ data class WeeklyReport(
     val victoriesThisWeek: Int,
     val cleanDaysThisWeek: Int
 )
+
+fun calculateWillpower(slips: List<SlipEvent>): Int {
+    val totalUrges = slips.size
+    if (totalUrges == 0) return 100
+    val resists = slips.count { it.isResist }
+    return ((resists.toFloat() / totalUrges.toFloat()) * 100).toInt()
+}
 
 fun computeInsights(slips: List<SlipEvent>): InsightsData? {
     if (slips.size < 3) return null
@@ -92,7 +100,8 @@ fun computeInsights(slips: List<SlipEvent>): InsightsData? {
         weekComparison = weekComparison,
         averageStreak = averageStreak,
         topTrigger = topTrigger,
-        suggestedAction = suggestedAction
+        suggestedAction = suggestedAction,
+        willpowerScore = calculateWillpower(slips)
     )
 }
 
