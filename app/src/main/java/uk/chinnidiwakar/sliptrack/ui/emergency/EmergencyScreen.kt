@@ -1,10 +1,14 @@
 package uk.chinnidiwakar.sliptrack.ui.emergency
 
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -26,21 +30,83 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 @Composable
 fun EmergencyScreen(onClose: () -> Unit) {
+    var timeLeft by remember { mutableIntStateOf(15 * 60) } // 15 minutes in seconds
+    var isTimerRunning by remember { mutableStateOf(false) }
+
+    // Animation for the Wave
+    val infiniteTransition = rememberInfiniteTransition(label = "wave")
+    val waveOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 2f * Math.PI.toFloat(),
+        animationSpec = infiniteRepeatable(tween(2000, easing = LinearEasing)),
+        label = "waveOffset"
+    )
+    // Timer Logic
+    LaunchedEffect(isTimerRunning) {
+        if (isTimerRunning) {
+            while (timeLeft > 0) {
+                delay(1000)
+                timeLeft--
+            }
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Ride the Wave", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+
+        // The Wave Canvas
+        Canvas(modifier = Modifier.fillMaxWidth().height(150.dp)) {
+            val width = size.width
+            val height = size.height
+            val points = mutableListOf<Offset>()
+
+            for (x in 0..width.toInt() step 5) {
+                val y = (Math.sin((x.toDouble() / width * 4 * Math.PI) + waveOffset).toFloat() * 40f) + (height / 2)
+                points.add(Offset(x.toFloat(), y))
+            }
+
+            drawPoints(points = points, pointMode = PointMode.Polygon, color = Color(0xFF4FC3F7), strokeWidth = 5f)
+        }
+
+        Text(
+            text = String.format("%02d:%02d", timeLeft / 60, timeLeft % 60),
+            fontSize = 48.sp,
+            fontWeight = FontWeight.Light
+        )
+
+        Button(
+            onClick = { isTimerRunning = !isTimerRunning },
+            modifier = Modifier.padding(vertical = 16.dp)
+        ) {
+            Text(if (isTimerRunning) "Pause Wave" else "Start Riding the Wave")
+        }
+
+        Text(
+            "Just 15 minutes. That's all you need to win.",
+            textAlign = TextAlign.Center,
+            color = Color.Gray
+        )
+    }
+
     var step by remember { mutableStateOf(0) }
     val haptic = LocalHapticFeedback.current
     val steps = listOf(

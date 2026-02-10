@@ -9,7 +9,6 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -18,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,8 +30,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import uk.chinnidiwakar.sliptrack.DatabaseProvider
+import uk.chinnidiwakar.sliptrack.HomeViewModel
+import uk.chinnidiwakar.sliptrack.HomeViewModelFactory
 import uk.chinnidiwakar.sliptrack.InsightsViewModel
 import uk.chinnidiwakar.sliptrack.InsightsViewModelFactory
+import uk.chinnidiwakar.sliptrack.PreferenceManager
 import uk.chinnidiwakar.sliptrack.ui.calendar.CalendarScreen
 import uk.chinnidiwakar.sliptrack.ui.emergency.EmergencyScreen
 import uk.chinnidiwakar.sliptrack.ui.history.HistoryScreen
@@ -48,17 +52,29 @@ sealed class Screen(val route: String) {
     object Emergency : Screen("emergency")
     object Settings : Screen("settings")
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+
+    // 1. Get the database instance first
+    val db = remember { DatabaseProvider.get(context) }
+
+    // 2. Extract the DAO from the database
+    val dao = remember { db.slipDao() }
+
+    val preferenceManager = remember { PreferenceManager(context) }
+
+    // 3. Pass the DAO (not the whole DB) to the factory
+    val homeViewModel: HomeViewModel = viewModel(
+        factory = HomeViewModelFactory(dao, preferenceManager)
+    )
 
     Scaffold(
-        containerColor = Color.Transparent, // Let the stars go all the way up
+        containerColor = Color.Transparent,
         bottomBar = { BottomNavigationBar(navController) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
-    ){ paddingValues ->
+    ) { paddingValues ->
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
@@ -68,17 +84,16 @@ fun AppNavigation() {
             composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Calendar.route) { CalendarScreen() }
             composable(Screen.Insights.route) { InsightsScreen() }
-            composable(Screen.Emergency.route) { EmergencyScreen(onClose = {navController.popBackStack()}) }
+            composable(Screen.Emergency.route) { EmergencyScreen(onClose = { navController.popBackStack() }) }
             composable(Screen.Settings.route) {
-                val context = LocalContext.current
+                // 'context' is already defined at the top of AppNavigation,
+                // so we don't need to re-declare it here unless you want a local one.
                 val scope = rememberCoroutineScope()
 
-                // We use the InsightsViewModel because it contains the export/import logic
                 val insightsViewModel: InsightsViewModel = viewModel(
                     factory = InsightsViewModelFactory(context)
                 )
 
-                // 1. Export Launcher
                 val exportLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.CreateDocument("application/json")
                 ) { uri ->
@@ -87,7 +102,6 @@ fun AppNavigation() {
                     }
                 }
 
-                // 2. Import Launcher
                 val importLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.OpenDocument()
                 ) { uri ->
@@ -96,8 +110,8 @@ fun AppNavigation() {
                     }
                 }
 
-                // 3. Pass the parameters into SettingsScreen
                 SettingsScreen(
+                    viewModel = homeViewModel, // Matches the variable at the top now!
                     onExport = { exportLauncher.launch("sliptrack-backup.json") },
                     onImport = { importLauncher.launch(arrayOf("application/json")) },
                     onNavigateBack = { navController.popBackStack() }

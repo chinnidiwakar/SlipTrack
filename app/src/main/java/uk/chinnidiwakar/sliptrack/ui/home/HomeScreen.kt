@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -53,19 +53,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import uk.chinnidiwakar.sliptrack.HomeViewModel
 import uk.chinnidiwakar.sliptrack.HomeViewModelFactory
 import uk.chinnidiwakar.sliptrack.SkyBackground
-import uk.chinnidiwakar.sliptrack.ui.theme.AccentButton
 
 @Composable
 fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
-    val viewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-        factory = HomeViewModelFactory(context)
+
+    // 1. Get the tools needed for the Factory
+    val database = remember { uk.chinnidiwakar.sliptrack.DatabaseProvider.get(context) }
+    val dao = remember { database.slipDao() }
+    val preferenceManager = remember { uk.chinnidiwakar.sliptrack.PreferenceManager(context) }
+
+    // 2. Fix the Factory call
+    val viewModel: HomeViewModel = viewModel(
+        factory = HomeViewModelFactory(dao, preferenceManager)
     )
+
+    // 3. Collect State
     val elapsedText by viewModel.elapsedText.collectAsState()
+    val journeyName by viewModel.journeyName.collectAsState() // 👈 Get journeyName here
     val currentStreak by viewModel.currentStreak.collectAsState()
     val longestStreak by viewModel.longestStreak.collectAsState()
     val quote by viewModel.dailyQuote.collectAsState()
@@ -79,7 +89,7 @@ fun HomeScreen(navController: NavController) {
         }
     }
 
-    // Handle Dialogs
+    // --- Dialogs (Keep your existing Handle Dialogs logic here) ---
     if (showVictoryDialog) {
         TriggerDialog(
             title = "How strong was the urge?",
@@ -106,113 +116,55 @@ fun HomeScreen(navController: NavController) {
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // 1. Background
             SkyBackground(streak = currentStreak)
 
-            // 2. Floating Settings Button (Inside Box, so .align works)
             IconButton(
                 onClick = { navController.navigate("settings") },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(end = 8.dp)
-                    .zIndex(2f)
+                modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(end = 8.dp).zIndex(2f)
             ) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
             }
 
-            // 3. Main Content
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp),
+                modifier = Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "Good day 🌿",
-                    modifier = Modifier.padding(top = 16.dp),
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
-                )
-
-                Text(
-                    text = "\"$quote\"",
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = Color.White.copy(alpha = 0.9f),
-                    fontStyle = FontStyle.Italic
-                )
+                Text("Good day 🌿", modifier = Modifier.padding(top = 16.dp), fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                Text("\"$quote\"", modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = Color.White.copy(alpha = 0.9f), fontStyle = FontStyle.Italic)
 
                 Spacer(Modifier.weight(0.5f))
 
-                // Streak Ring
-                StreakRing(progress = (currentStreak.coerceAtMost(30)) / 30f) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = elapsedText, fontSize = 34.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text(text = "since last slip", fontSize = 12.sp, color = Color.White.copy(alpha = 0.7f))
-                    }
-                }
+                // 4. Pass the data INTO the StreakRing
+                StreakRing(
+                    progress = (currentStreak.coerceAtMost(30)) / 30f,
+                    elapsedText = elapsedText,
+                    journeyName = journeyName
+                )
 
                 Spacer(Modifier.height(24.dp))
 
-                // Stats Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     StreakItem(value = currentStreak, label = "Current")
                     StreakItem(value = longestStreak, label = "Best")
                 }
 
                 Spacer(Modifier.weight(1f))
-
-                Text(
-                    text = "You're trying — that matters 🤍",
-                    fontSize = 14.sp,
-                    color = Color.White.copy(alpha = 0.6f)
-                )
-
+                Text("You're trying — that matters 🤍", fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f))
                 Spacer(Modifier.height(24.dp))
 
                 // --- THE TRIO BUTTONS ---
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 32.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Victory
-                    Button(
-                        onClick = { showVictoryDialog = true },
-                        modifier = Modifier.weight(1f).height(60.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                        shape = RoundedCornerShape(20.dp)
-                    ) {
+                    Button(onClick = { showVictoryDialog = true }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), shape = RoundedCornerShape(20.dp)) {
                         Text("Resist 🛡️", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
-
-                    // SOS
-                    Button(
-                        onClick = { navController.navigate("emergency") },
-                        modifier = Modifier.size(60.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Icon(Icons.Default.Warning, contentDescription = "SOS", tint = Color.White)
+                    Button(onClick = { navController.navigate("emergency") }, modifier = Modifier.size(60.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error), shape = RoundedCornerShape(20.dp), contentPadding = PaddingValues(0.dp)) {
+                        Icon(Icons.Default.Shield, contentDescription = "SOS", tint = Color.White)
                     }
-
-                    // Slip
-                    Button(
-                        onClick = { showSlipDialog = true },
-                        modifier = Modifier.weight(1f).height(60.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)),
-                        shape = RoundedCornerShape(20.dp)
-                    ) {
+                    Button(onClick = { showSlipDialog = true }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)), shape = RoundedCornerShape(20.dp)) {
                         Text("Slip", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
@@ -220,9 +172,6 @@ fun HomeScreen(navController: NavController) {
         }
     }
 }
-
-// --- Keep your StreakItem, StreakRing, and TriggerDialog helper functions below this ---
-// --- Helper Components Moved Outside to Fix Scope Errors ---
 
 @Composable
 fun StreakItem(value: Int, label: String) {
@@ -241,23 +190,35 @@ fun StreakItem(value: Int, label: String) {
 }
 
 @Composable
-fun StreakRing(progress: Float, content: @Composable () -> Unit) {
+fun StreakRing(progress: Float, elapsedText: String, journeyName: String) {
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
         animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
         label = "ring"
     )
 
-
     Box(contentAlignment = Alignment.Center) {
         CircularProgressIndicator(
             progress = { animatedProgress },
             strokeWidth = 8.dp,
-            color = AccentButton,
+            color = Color.White,
             trackColor = Color.White.copy(alpha = 0.1f),
             modifier = Modifier.size(200.dp)
         )
-        content()
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = elapsedText,
+                fontSize = 34.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                text = "since $journeyName",
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.7f)
+            )
+        }
     }
 }
 
@@ -278,7 +239,6 @@ fun TriggerDialog(
         title = { Text(title, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // 1. Intensity Selection
                 Text("How strong is it?", style = MaterialTheme.typography.labelLarge)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -300,7 +260,6 @@ fun TriggerDialog(
                     }
                 }
 
-                // 2. Trigger Selection (Using FlowRow to wrap items)
                 Text("What triggered it?", style = MaterialTheme.typography.labelLarge)
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
@@ -311,10 +270,7 @@ fun TriggerDialog(
                         FilterChip(
                             selected = selectedTrigger == option,
                             onClick = { selectedTrigger = option },
-                            label = { Text(option) },
-                            leadingIcon = if (selectedTrigger == option) {
-                                { Icon(androidx.compose.material.icons.Icons.Default.Settings, null, Modifier.size(18.dp)) }
-                            } else null
+                            label = { Text(option) }
                         )
                     }
                 }

@@ -7,23 +7,39 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import uk.chinnidiwakar.sliptrack.utils.formatElapsedTime
 
 class HomeViewModel(
-    private val dao: SlipDao
+    private val dao: SlipDao,
+    private val preferenceManager: PreferenceManager
 ) : ViewModel() {
-
 
     private val _dailyQuote = MutableStateFlow("")
     val dailyQuote: StateFlow<String> = _dailyQuote.asStateFlow()
 
     private val _elapsedText = MutableStateFlow("0m")
     val elapsedText: StateFlow<String> = _elapsedText
+
+    val journeyName: StateFlow<String> = preferenceManager.journeyName
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "last slip"
+        )
+
+    // Function to update the name (called from Settings)
+    fun updateJourneyName(newName: String) {
+        viewModelScope.launch {
+            preferenceManager.saveJourneyName(newName)
+        }
+    }
 
     private val _currentStreak = MutableStateFlow(0)
     val currentStreak: StateFlow<Int> = _currentStreak

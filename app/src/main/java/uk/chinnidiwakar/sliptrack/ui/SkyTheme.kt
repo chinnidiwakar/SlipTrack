@@ -28,9 +28,14 @@ import kotlin.random.Random
 fun SkyBackground(streak: Int) {
     // 1. Improved Gradient for AMOLED (no sharp lines)
     val gradient = when {
-        streak < 7 -> listOf(Color(0xFF1B2735), Color(0xFF0D1117), Color(0xFF000000))
-        streak < 30 -> listOf(Color(0xFF0F2027), Color(0xFF000000), Color(0xFF000000))
-        else -> listOf(Color(0xFF050A1F), Color(0xFF000000), Color(0xFF000000))
+        // TAMAS: 0-7 Days (Deep Void/Overcoming Inertia)
+        streak < 7 -> listOf(Color(0xFF000000), Color(0xFF0D1117), Color(0xFF16213E))
+
+        // RAJAS: 7-30 Days (Passion/Transformation - Hint of Purple/Crimson)
+        streak < 30 -> listOf(Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E))
+
+        // SATTVA: 30+ Days (Purity/Light - The Brahma Muhurta Blue)
+        else -> listOf(Color(0xFF001F3F), Color(0xFF004466), Color(0xFF007799))
     }
 
     val view = LocalView.current
