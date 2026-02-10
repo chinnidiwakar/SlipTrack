@@ -9,7 +9,6 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -69,7 +68,7 @@ fun AppNavigation() {
             composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Calendar.route) { CalendarScreen() }
             composable(Screen.Insights.route) { InsightsScreen() }
-            composable(Screen.Emergency.route) { EmergencyScreen() }
+            composable(Screen.Emergency.route) { EmergencyScreen(onClose = {navController.popBackStack()}) }
             composable(Screen.Settings.route) {
                 val context = LocalContext.current
                 val scope = rememberCoroutineScope()
@@ -116,11 +115,24 @@ fun BottomNavigationBar(navController: NavController) {
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 6.dp) {
 
         NavigationBarItem(
-            selected = currentRoute == Screen.Home.route,
+            selected = currentRoute == Screen.Home.route ||
+                    currentRoute == Screen.Emergency.route ||
+                    currentRoute == Screen.Settings.route,
             onClick = {
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Home.route)
-                    launchSingleTop = true
+                // 1. If we are on a completely different tab (History/Calendar/Insights)
+                if (currentRoute != Screen.Home.route &&
+                    currentRoute != Screen.Emergency.route &&
+                    currentRoute != Screen.Settings.route) {
+
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(navController.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                } else {
+                    // 2. If we are ALREADY in the Home "territory" (Home, SOS, or Settings)
+                    // This force-clears everything back to the actual Home Screen
+                    navController.popBackStack(Screen.Home.route, inclusive = false)
                 }
             },
             label = { Text("Home") },
@@ -130,9 +142,14 @@ fun BottomNavigationBar(navController: NavController) {
         NavigationBarItem(
             selected = currentRoute == Screen.History.route,
             onClick = {
-                navController.navigate(Screen.History.route) {
-                    popUpTo(Screen.Home.route)
-                    launchSingleTop = true
+                if (currentRoute != Screen.History.route) { // 👈 Prevents reloading if already there
+                    navController.navigate(Screen.History.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
             },
             label = { Text("History") },
@@ -142,9 +159,14 @@ fun BottomNavigationBar(navController: NavController) {
         NavigationBarItem(
             selected = currentRoute == Screen.Calendar.route,
             onClick = {
-                navController.navigate(Screen.Calendar.route) {
-                    popUpTo(Screen.Home.route)
-                    launchSingleTop = true
+                if (currentRoute != Screen.Calendar.route) { // 👈 Prevents reloading if already there
+                    navController.navigate(Screen.Calendar.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
             },
             label = { Text("Calendar") },
@@ -153,16 +175,19 @@ fun BottomNavigationBar(navController: NavController) {
 
         NavigationBarItem(
             selected = currentRoute == Screen.Insights.route,
-            onClick = { navController.navigate(Screen.Insights.route) },
+            onClick = {
+                if (currentRoute != Screen.Insights.route) { // 👈 Prevents reloading if already there
+                    navController.navigate(Screen.Insights.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            },
             label = { Text("Insights") },
             icon = { Icon(Icons.Default.Analytics, null) }
-        )
-
-        NavigationBarItem(
-            selected = currentRoute == Screen.Emergency.route,
-            onClick = { navController.navigate(Screen.Emergency.route) },
-            label = { Text("SOS") },
-            icon = { Icon(Icons.Default.Warning, null) }
         )
     }
 }

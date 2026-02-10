@@ -15,6 +15,7 @@ room = "2.6.1"
 workRuntimeKtx = "2.10.0"
 material3Version = "1.4.0"
 ui = "1.10.2"
+uiGraphics = "1.10.2"
 
 [libraries]
 # Icons - Using the version from the BOM
@@ -53,6 +54,7 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "j
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Version" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphics" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
     ksp(libs.room.compiler)
 
     // Testing

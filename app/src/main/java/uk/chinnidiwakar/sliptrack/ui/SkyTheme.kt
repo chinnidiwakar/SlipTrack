@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -54,27 +55,34 @@ fun SkyBackground(streak: Int) {
         label = "twinkle"
     )
 
+    // Inside SkyBackground
+    val starCount = remember(streak) { (150 + (streak * 2).coerceAtMost(300)) }
+    val starPositions = remember(starCount) {
+        val rand = Random(2024)
+        List(starCount) {
+            Offset(rand.nextFloat(), rand.nextFloat()) to (rand.nextFloat() > 0.97f)
+        }
+    }
+
     Canvas(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(gradient))) {
+        // 1. Draw atmosphere first
         drawAtmosphere()
 
-        val rand = Random(2024) // Keeps stars fixed in position
-        // Base stars + 1 star for every day of streak
-        val starCount = 150 + (streak * 2).coerceAtMost(300)
+        // 2. Draw stars using the REMEMBERED positions
+        starPositions.forEachIndexed { index, (pos, isBig) ->
+            val x = pos.x * size.width
+            val y = pos.y * size.height
 
-        repeat(starCount) { index ->
-            val x = rand.nextFloat() * size.width
-            val y = rand.nextFloat() * size.height
-
-            // Only every 3rd star twinkles to make it look realistic
             val twinkle = if (index % 3 == 0) alphaAnim else 1f
-            val isBigStar = rand.nextFloat() > 0.97f
 
             drawCircle(
-                color = Color.White.copy(alpha = (if(isBigStar) 0.7f else 0.3f) * twinkle),
-                radius = if(isBigStar) 1.8f else 0.6f,
+                color = Color.White.copy(alpha = (if(isBig) 0.7f else 0.3f) * twinkle),
+                radius = if(isBig) 1.8f else 0.6f,
                 center = Offset(x, y)
             )
         }
+
+        // 3. Draw the moon
         drawMoonWithCraters(streak)
     }
 }
