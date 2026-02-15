@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import uk.chinnidiwakar.sliptrack.ui.calendar.CalendarDay
 import uk.chinnidiwakar.sliptrack.ui.calendar.DaySummary
-import uk.chinnidiwakar.sliptrack.utils.buildCalendarDays
-import uk.chinnidiwakar.sliptrack.utils.buildDaySummaries
+import uk.chinnidiwakar.sliptrack.utils.DateUtils.buildCalendarDays
+import uk.chinnidiwakar.sliptrack.utils.DateUtils.buildDaySummaries
 import java.time.LocalDate
 import java.time.YearMonth
 

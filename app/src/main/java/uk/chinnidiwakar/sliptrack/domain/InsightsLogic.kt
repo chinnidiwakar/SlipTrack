@@ -4,6 +4,7 @@ import uk.chinnidiwakar.sliptrack.SlipEvent
 import uk.chinnidiwakar.sliptrack.StreakCalculator
 import uk.chinnidiwakar.sliptrack.utils.toLocalDate
 import uk.chinnidiwakar.sliptrack.utils.toZonedDateTime
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
