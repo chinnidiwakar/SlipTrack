@@ -3,7 +3,6 @@ package uk.chinnidiwakar.sliptrack.utils
 import uk.chinnidiwakar.sliptrack.SlipEvent
 import uk.chinnidiwakar.sliptrack.ui.calendar.CalendarDay
 import uk.chinnidiwakar.sliptrack.ui.calendar.DaySummary
-import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
 
@@ -20,6 +19,9 @@ object DateUtils {
         val hours = minutes / 60
         val days = hours / 24
 
+    val grouped = actualSlips.groupBy {
+        val date = toLocalDate(it.timestamp)
+        date
         return when {
             days > 0 -> "${days}d ${hours % 24}h"
             hours > 0 -> "${hours}h ${minutes % 60}m"
@@ -38,6 +40,16 @@ object DateUtils {
             date
         }
 
+fun buildCalendarDays(
+    slips: List<SlipEvent>,
+    month: YearMonth
+): List<CalendarDay> {
+    val zone = ZoneId.systemDefault()
+    val daysInMonth = month.lengthOfMonth()
+
+    // Group EVERY event (Slips and Resists) by date
+    val groupedByDate = slips.groupBy {
+        toLocalDate(it.timestamp, zone)
         return grouped.entries
             .sortedByDescending { it.key }
             .map { entry ->
@@ -71,3 +83,4 @@ object DateUtils {
         }
     }
 }
+
