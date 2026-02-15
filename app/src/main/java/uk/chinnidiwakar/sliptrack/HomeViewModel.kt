@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import uk.chinnidiwakar.sliptrack.utils.formatElapsedTime
+import uk.chinnidiwakar.sliptrack.utils.DateUtils.formatElapsedTime
 import uk.chinnidiwakar.sliptrack.utils.normalizeTimestamp
 import uk.chinnidiwakar.sliptrack.utils.toLocalDate
 

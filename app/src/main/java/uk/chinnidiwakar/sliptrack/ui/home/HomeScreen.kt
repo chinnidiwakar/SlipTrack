@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -230,7 +231,7 @@ fun TriggerDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int, String?) -> Unit
 ) {
-    var selectedIntensity by remember { mutableStateOf(2) }
+    var selectedIntensity by remember { mutableIntStateOf(2) }
     var selectedTrigger by remember { mutableStateOf<String?>(null) }
     val triggerOptions = listOf("Stress", "Boredom", "Loneliness", "Social Media", "Fatigue", "Late Night", "Other")
 

@@ -4,6 +4,7 @@ import uk.chinnidiwakar.sliptrack.SlipEvent
 import uk.chinnidiwakar.sliptrack.StreakCalculator
 import uk.chinnidiwakar.sliptrack.utils.toLocalDate
 import uk.chinnidiwakar.sliptrack.utils.toZonedDateTime
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -37,7 +38,9 @@ fun computeInsights(events: List<SlipEvent>): InsightsData? {
     if (slips.size < 3) return null
 
     val zone = ZoneId.systemDefault()
-    val times = slips.map { toZonedDateTime(it.timestamp, zone) }
+    val times = slips.map {
+        Instant.ofEpochMilli(normalizeTimestamp(it.timestamp)).atZone(zone)
+    }
 
     val mostCommonHour = times
         .groupingBy { it.hour }
@@ -111,7 +114,7 @@ fun computeWeeklyReport(allEvents: List<SlipEvent>): WeeklyReport {
     val weekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1)
 
     val eventsThisWeek = allEvents.filter {
-        toLocalDate(it.timestamp, zone) >= weekStart
+        Instant.ofEpochMilli(normalizeTimestamp(it.timestamp)).atZone(zone).toLocalDate() >= weekStart
     }
 
     val slipsThisWeek = eventsThisWeek.count { !it.isResist }
@@ -119,7 +122,7 @@ fun computeWeeklyReport(allEvents: List<SlipEvent>): WeeklyReport {
 
     val slipDates = eventsThisWeek
         .filter { !it.isResist }
-        .map { toLocalDate(it.timestamp, zone) }
+        .map { Instant.ofEpochMilli(normalizeTimestamp(it.timestamp)).atZone(zone).toLocalDate() }
         .toSet()
 
     val cleanDaysThisWeek = (0..today.dayOfWeek.value - 1)
@@ -131,6 +134,10 @@ fun computeWeeklyReport(allEvents: List<SlipEvent>): WeeklyReport {
         victoriesThisWeek = victoriesThisWeek,
         cleanDaysThisWeek = cleanDaysThisWeek
     )
+}
+
+private fun normalizeTimestamp(raw: Long): Long {
+    return if (raw < 1_000_000_000_000L) raw * 1000 else raw
 }
 
 private fun buildSuggestion(mostCommonHour: String?, topTrigger: String?): String? {

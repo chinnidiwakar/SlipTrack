@@ -48,9 +48,9 @@ object DataBackupManager {
                         id = obj.optInt("id", 0),
                         timestamp = normalizeTimestamp(rawTimestamp),
                         isResist = obj.optBoolean("isResist", false),
-                        intensity = obj.optInt("intensity", 0).coerceIn(0, 3),
-                        note = obj.optNullableString("note")?.trim(),
-                        trigger = obj.optNullableString("trigger")?.trim()
+                        intensity = obj.optInt("intensity", 0),
+                        note = obj.optNullableString("note"),
+                        trigger = obj.optNullableString("trigger")
                     )
                 )
             }
