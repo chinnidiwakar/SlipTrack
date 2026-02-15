@@ -167,7 +167,7 @@ fun HomeScreen(navController: NavController) {
                     Button(onClick = { showVictoryDialog = true }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), shape = RoundedCornerShape(20.dp)) {
                         Text("Resist 🛡️", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
-                    Button(onClick = { navController.navigate("emergency") }, modifier = Modifier.size(60.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error), shape = RoundedCornerShape(20.dp), contentPadding = PaddingValues(0.dp)) {
+                    Button(onClick = { navController.navigate("emergency") }, modifier = Modifier.size(60.dp), shape = RoundedCornerShape(20.dp), contentPadding = PaddingValues(0.dp)) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(Icons.Default.Shield, contentDescription = "SOS", tint = Color.White)
                             if (shieldCharges > 0) {

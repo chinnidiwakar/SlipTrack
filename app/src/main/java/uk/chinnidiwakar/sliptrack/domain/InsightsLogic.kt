@@ -158,7 +158,7 @@ private fun normalizeTimestamp(raw: Long): Long {
     return if (raw < 1_000_000_000_000L) raw * 1000 else raw
 }
 
-private fun recentSlipRate(events: List<SlipEvent>): String? {
+private fun recentSlipRate(events: List<SlipEvent>): String {
     val today = LocalDate.now()
     val windowStart = today.minusDays(6)
 
