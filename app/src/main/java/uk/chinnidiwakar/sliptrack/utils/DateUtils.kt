@@ -26,7 +26,9 @@ fun buildDaySummaries(slips: List<SlipEvent>): List<DaySummary> {
     if (actualSlips.isEmpty()) return emptyList()
 
     val grouped = actualSlips.groupBy {
-        val date = toLocalDate(it.timestamp)
+        val date = Instant.ofEpochMilli(normalizeTimestamp(it.timestamp))
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
         date
     }
 
@@ -53,7 +55,9 @@ fun buildCalendarDays(
 
     // Group EVERY event (Slips and Resists) by date
     val groupedByDate = slips.groupBy {
-        toLocalDate(it.timestamp, zone)
+        Instant.ofEpochMilli(normalizeTimestamp(it.timestamp))
+            .atZone(zone)
+            .toLocalDate()
     }
 
     return (1..daysInMonth).map { dayNum ->
@@ -68,3 +72,6 @@ fun buildCalendarDays(
     }
 }
 
+private fun normalizeTimestamp(raw: Long): Long {
+    return if (raw < 1_000_000_000_000L) raw * 1000 else raw
+}
