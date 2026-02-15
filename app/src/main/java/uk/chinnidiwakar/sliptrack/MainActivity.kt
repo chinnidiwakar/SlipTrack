@@ -1,9 +1,14 @@
 package uk.chinnidiwakar.sliptrack
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -13,10 +18,15 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* no-op; milestones will begin when permission is granted */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Setup WorkManager BEFORE setContent
+        requestNotificationPermissionIfNeeded()
         setupMilestoneWork()
         enableEdgeToEdge()
         setContent {
@@ -26,7 +36,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
 
+        val alreadyGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!alreadyGranted) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     private fun setupMilestoneWork() {
         val streakRequest = PeriodicWorkRequestBuilder<StreakWorker>(24, TimeUnit.HOURS)
@@ -44,12 +65,10 @@ class MainActivity : ComponentActivity() {
         val calendar = Calendar.getInstance()
         val now = calendar.timeInMillis
 
-        // Set to 8:00 AM
         calendar.set(Calendar.HOUR_OF_DAY, 8)
         calendar.set(Calendar.MINUTE, 0)
         calendar.set(Calendar.SECOND, 0)
 
-        // If it's already past 8 AM, schedule for tomorrow
         if (calendar.timeInMillis <= now) {
             calendar.add(Calendar.DAY_OF_YEAR, 1)
         }

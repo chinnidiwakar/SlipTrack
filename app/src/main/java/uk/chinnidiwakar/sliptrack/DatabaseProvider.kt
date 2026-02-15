@@ -14,7 +14,10 @@ object DatabaseProvider {
                 AppDatabase::class.java,
                 "sliptrack.db"
             )
-                .addMigrations(AppMigrations.MIGRATION_2_3)
+                .addMigrations(
+                    AppMigrations.MIGRATION_2_3,
+                    AppMigrations.MIGRATION_3_4
+                )
                 .build()
 
             db = instance

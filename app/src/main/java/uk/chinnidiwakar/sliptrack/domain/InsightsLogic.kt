@@ -2,7 +2,8 @@ package uk.chinnidiwakar.sliptrack.domain
 
 import uk.chinnidiwakar.sliptrack.SlipEvent
 import uk.chinnidiwakar.sliptrack.StreakCalculator
-import java.time.Instant
+import uk.chinnidiwakar.sliptrack.utils.toLocalDate
+import uk.chinnidiwakar.sliptrack.utils.toZonedDateTime
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -24,20 +25,19 @@ data class WeeklyReport(
     val cleanDaysThisWeek: Int
 )
 
-fun calculateWillpower(slips: List<SlipEvent>): Int {
-    val totalUrges = slips.size
+fun calculateWillpower(events: List<SlipEvent>): Int {
+    val totalUrges = events.size
     if (totalUrges == 0) return 100
-    val resists = slips.count { it.isResist }
+    val resists = events.count { it.isResist }
     return ((resists.toFloat() / totalUrges.toFloat()) * 100).toInt()
 }
 
-fun computeInsights(slips: List<SlipEvent>): InsightsData? {
+fun computeInsights(events: List<SlipEvent>): InsightsData? {
+    val slips = events.filter { !it.isResist }
     if (slips.size < 3) return null
 
     val zone = ZoneId.systemDefault()
-    val times = slips.map {
-        Instant.ofEpochMilli(it.timestamp).atZone(zone)
-    }
+    val times = slips.map { toZonedDateTime(it.timestamp, zone) }
 
     val mostCommonHour = times
         .groupingBy { it.hour }
@@ -101,7 +101,7 @@ fun computeInsights(slips: List<SlipEvent>): InsightsData? {
         averageStreak = averageStreak,
         topTrigger = topTrigger,
         suggestedAction = suggestedAction,
-        willpowerScore = calculateWillpower(slips)
+        willpowerScore = calculateWillpower(events)
     )
 }
 
@@ -111,7 +111,7 @@ fun computeWeeklyReport(allEvents: List<SlipEvent>): WeeklyReport {
     val weekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1)
 
     val eventsThisWeek = allEvents.filter {
-        Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() >= weekStart
+        toLocalDate(it.timestamp, zone) >= weekStart
     }
 
     val slipsThisWeek = eventsThisWeek.count { !it.isResist }
@@ -119,7 +119,7 @@ fun computeWeeklyReport(allEvents: List<SlipEvent>): WeeklyReport {
 
     val slipDates = eventsThisWeek
         .filter { !it.isResist }
-        .map { Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() }
+        .map { toLocalDate(it.timestamp, zone) }
         .toSet()
 
     val cleanDaysThisWeek = (0..today.dayOfWeek.value - 1)

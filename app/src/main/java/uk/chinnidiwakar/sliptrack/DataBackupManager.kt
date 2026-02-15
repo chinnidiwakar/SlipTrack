@@ -41,8 +41,8 @@ object DataBackupManager {
                         timestamp = obj.optLong("timestamp"),
                         isResist = obj.optBoolean("isResist", false),
                         intensity = obj.optInt("intensity", 0),
-                        note = obj.optString("note").takeIf { it.isNotBlank() },
-                        trigger = obj.optString("trigger").takeIf { it.isNotBlank() }
+                        note = obj.optNullableString("note"),
+                        trigger = obj.optNullableString("trigger")
                     )
                 )
             }
@@ -60,4 +60,9 @@ object DataBackupManager {
             reader.readText()
         } ?: error("Unable to open source file")
     }
+}
+
+private fun JSONObject.optNullableString(key: String): String? {
+    if (!has(key) || isNull(key)) return null
+    return optString(key).takeIf { it.isNotBlank() && it != "null" }
 }

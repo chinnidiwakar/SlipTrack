@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import uk.chinnidiwakar.sliptrack.utils.formatElapsedTime
+import uk.chinnidiwakar.sliptrack.utils.normalizeTimestamp
+import uk.chinnidiwakar.sliptrack.utils.toLocalDate
 
 class HomeViewModel(
     private val dao: SlipDao,
@@ -64,8 +66,8 @@ class HomeViewModel(
                 val actualSlips = allEvents.filter { !it.isResist }
 
                 val baselineTime = when {
-                    actualSlips.isNotEmpty() -> actualSlips.maxBy { it.timestamp }.timestamp
-                    allEvents.isNotEmpty() -> allEvents.minBy { it.timestamp }.timestamp
+                    actualSlips.isNotEmpty() -> actualSlips.maxBy { normalizeTimestamp(it.timestamp) }.timestamp
+                    allEvents.isNotEmpty() -> allEvents.minBy { normalizeTimestamp(it.timestamp) }.timestamp
                     else -> null
                 }
 
@@ -115,15 +117,8 @@ class HomeViewModel(
         }
     }
 
-    private fun normalizeTimestamp(raw: Long): Long {
-        return if (raw < 1_000_000_000_000L) raw * 1000 else raw
-    }
-
     private fun daysSince(rawTimestamp: Long): Int {
-        val zone = java.time.ZoneId.systemDefault()
-        val date = java.time.Instant.ofEpochMilli(normalizeTimestamp(rawTimestamp))
-            .atZone(zone)
-            .toLocalDate()
+        val date = toLocalDate(rawTimestamp)
         return java.time.temporal.ChronoUnit.DAYS.between(date, java.time.LocalDate.now()).toInt()
     }
 
@@ -146,17 +141,19 @@ class HomeViewModel(
         triggerLabel: String? = null
     ) {
         viewModelScope.launch {
+            val safeIntensity = intensity.coerceIn(0, 3)
+
             dao.insertSlip(
                 SlipEvent(
                     timestamp = System.currentTimeMillis(),
                     isResist = isResist,
-                    intensity = intensity,
+                    intensity = safeIntensity,
                     trigger = triggerLabel
                 )
             )
 
             if (isResist) {
-                val msg = when (intensity) {
+                val msg = when (safeIntensity) {
                     1 -> "🌱 Spark extinguished! Good catch."
                     2 -> "⚔️ Stayed strong through the urge!"
                     3 -> "🏆 MASSIVE VICTORY! You conquered the pit."
