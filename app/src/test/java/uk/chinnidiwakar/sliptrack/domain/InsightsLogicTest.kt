@@ -48,6 +48,9 @@ class InsightsLogicTest {
         assertEquals("9 PM", insights?.mostCommonHour)
         assertTrue(insights?.mostCommonDay?.isNotBlank() == true)
         assertTrue(insights?.averageStreak?.contains("days") == true)
+        assertTrue(insights?.currentStreak?.contains("days") == true)
+        assertTrue(insights?.recentSlipRate?.contains("slips/day") == true)
+        assertTrue(insights?.hardestWindow?.contains("-") == true)
         assertEquals("Stress", insights?.topTrigger)
         assertTrue(insights?.suggestedAction?.isNotBlank() == true)
     }
@@ -65,6 +68,21 @@ class InsightsLogicTest {
 
         assertNotNull(insights)
         assertEquals(25, insights?.willpowerScore)
+    }
+
+    @Test
+    fun computeInsights_recognizesFallbackTriggerAndRiskWindowSuggestion() {
+        val events = listOf(
+            SlipEvent(timestamp = epochMillis(6, 1), trigger = "  "),
+            SlipEvent(timestamp = epochMillis(4, 2), trigger = null),
+            SlipEvent(timestamp = epochMillis(2, 3), trigger = "")
+        )
+
+        val insights = computeInsights(events)
+
+        assertNotNull(insights)
+        assertEquals("Unspecified", insights?.topTrigger)
+        assertTrue(insights?.suggestedAction?.contains("highest-risk window") == true)
     }
 
     @Test

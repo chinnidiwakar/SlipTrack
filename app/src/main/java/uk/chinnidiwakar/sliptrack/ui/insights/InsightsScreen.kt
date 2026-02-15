@@ -75,6 +75,15 @@ fun InsightsScreen() {
                     MiniInsightCard("Hardest Day", insights!!.mostCommonDay ?: "--", Modifier.weight(1f))
                 }
 
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    MiniInsightCard("Current Streak", insights!!.currentStreak ?: "--", Modifier.weight(1f))
+                    MiniInsightCard("Risk Window", insights!!.hardestWindow ?: "--", Modifier.weight(1f))
+                }
+
+                insights?.recentSlipRate?.let {
+                    InsightCard("Recent Slip Velocity", it)
+                }
+
                 // --- Smart Recovery Plan (Glow Glass) ---
                 insights?.suggestedAction?.let { action ->
                     Surface(

@@ -38,6 +38,18 @@ class StreakCalculatorTest {
         assertEquals(11, StreakCalculator.longestStreak(slips))
     }
 
+
+    @Test
+    fun longestStreak_includesCurrentStreakWindow() {
+        val slips = listOf(
+            SlipEvent(timestamp = atStartOfDayEpochMillis(30)),
+            SlipEvent(timestamp = atStartOfDayEpochMillis(29)),
+            SlipEvent(timestamp = atStartOfDayEpochMillis(10))
+        )
+
+        assertEquals(10, StreakCalculator.longestStreak(slips))
+    }
+
     @Test
     fun averageStreak_ignoresResistEvents() {
         val events = listOf(
