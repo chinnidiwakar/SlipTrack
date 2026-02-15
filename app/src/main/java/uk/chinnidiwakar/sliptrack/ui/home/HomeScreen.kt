@@ -151,6 +151,10 @@ fun HomeScreen(navController: NavController) {
                 }
 
                 Spacer(Modifier.weight(1f))
+                if (shieldCharges > 0) {
+                    Text("🛡️ Shield charges: $shieldCharges", fontSize = 13.sp, color = Color(0xFFFFE082))
+                    Spacer(Modifier.height(8.dp))
+                }
                 Text("You're trying — that matters 🤍", fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f))
                 Spacer(Modifier.height(24.dp))
 
