@@ -162,7 +162,11 @@ fun JourneyNameEditor(currentName: String, onSave: (String) -> Unit) {
             title = "Current Goal",
             subtitle = currentName,
             icon = Icons.Default.Flag,
-            onClick = { isEditing = true }
+            onClick = {
+                text = currentName
+                selectedOption = DEFAULT_JOURNEY_OPTIONS.firstOrNull { it.equals(currentName, ignoreCase = true) }
+                isEditing = true
+            }
         )
     } else {
         Column(Modifier.padding(16.dp)) {
