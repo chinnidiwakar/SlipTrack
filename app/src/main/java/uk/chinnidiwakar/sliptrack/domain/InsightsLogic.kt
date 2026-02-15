@@ -24,19 +24,20 @@ data class WeeklyReport(
     val cleanDaysThisWeek: Int
 )
 
-fun calculateWillpower(slips: List<SlipEvent>): Int {
-    val totalUrges = slips.size
+fun calculateWillpower(events: List<SlipEvent>): Int {
+    val totalUrges = events.size
     if (totalUrges == 0) return 100
-    val resists = slips.count { it.isResist }
+    val resists = events.count { it.isResist }
     return ((resists.toFloat() / totalUrges.toFloat()) * 100).toInt()
 }
 
-fun computeInsights(slips: List<SlipEvent>): InsightsData? {
+fun computeInsights(events: List<SlipEvent>): InsightsData? {
+    val slips = events.filter { !it.isResist }
     if (slips.size < 3) return null
 
     val zone = ZoneId.systemDefault()
     val times = slips.map {
-        Instant.ofEpochMilli(it.timestamp).atZone(zone)
+        Instant.ofEpochMilli(normalizeTimestamp(it.timestamp)).atZone(zone)
     }
 
     val mostCommonHour = times
@@ -101,7 +102,7 @@ fun computeInsights(slips: List<SlipEvent>): InsightsData? {
         averageStreak = averageStreak,
         topTrigger = topTrigger,
         suggestedAction = suggestedAction,
-        willpowerScore = calculateWillpower(slips)
+        willpowerScore = calculateWillpower(events)
     )
 }
 
@@ -111,7 +112,7 @@ fun computeWeeklyReport(allEvents: List<SlipEvent>): WeeklyReport {
     val weekStart = today.minusDays(today.dayOfWeek.value.toLong() - 1)
 
     val eventsThisWeek = allEvents.filter {
-        Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() >= weekStart
+        Instant.ofEpochMilli(normalizeTimestamp(it.timestamp)).atZone(zone).toLocalDate() >= weekStart
     }
 
     val slipsThisWeek = eventsThisWeek.count { !it.isResist }
@@ -119,7 +120,7 @@ fun computeWeeklyReport(allEvents: List<SlipEvent>): WeeklyReport {
 
     val slipDates = eventsThisWeek
         .filter { !it.isResist }
-        .map { Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate() }
+        .map { Instant.ofEpochMilli(normalizeTimestamp(it.timestamp)).atZone(zone).toLocalDate() }
         .toSet()
 
     val cleanDaysThisWeek = (0..today.dayOfWeek.value - 1)
@@ -131,6 +132,10 @@ fun computeWeeklyReport(allEvents: List<SlipEvent>): WeeklyReport {
         victoriesThisWeek = victoriesThisWeek,
         cleanDaysThisWeek = cleanDaysThisWeek
     )
+}
+
+private fun normalizeTimestamp(raw: Long): Long {
+    return if (raw < 1_000_000_000_000L) raw * 1000 else raw
 }
 
 private fun buildSuggestion(mostCommonHour: String?, topTrigger: String?): String? {

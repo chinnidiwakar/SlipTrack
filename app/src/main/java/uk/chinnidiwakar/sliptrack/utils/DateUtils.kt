@@ -27,7 +27,7 @@ fun buildDaySummaries(slips: List<SlipEvent>): List<DaySummary> {
     if (actualSlips.isEmpty()) return emptyList()
 
     val grouped = actualSlips.groupBy {
-        val date = Instant.ofEpochMilli(it.timestamp)
+        val date = Instant.ofEpochMilli(normalizeTimestamp(it.timestamp))
             .atZone(ZoneId.systemDefault())
             .toLocalDate()
         date
@@ -56,7 +56,7 @@ fun buildCalendarDays(
 
     // Group EVERY event (Slips and Resists) by date
     val groupedByDate = slips.groupBy {
-        Instant.ofEpochMilli(it.timestamp)
+        Instant.ofEpochMilli(normalizeTimestamp(it.timestamp))
             .atZone(zone)
             .toLocalDate()
     }
@@ -71,4 +71,8 @@ fun buildCalendarDays(
             urgesResisted = dayEvents.count { it.isResist } // Count successful resistances!
         )
     }
+}
+
+private fun normalizeTimestamp(raw: Long): Long {
+    return if (raw < 1_000_000_000_000L) raw * 1000 else raw
 }

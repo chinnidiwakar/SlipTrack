@@ -47,8 +47,7 @@ class InsightsViewModel(context: Context) : ViewModel() {
     private fun observeInsights() {
         viewModelScope.launch {
             dao.observeAllEvents().collect { events ->
-                val slips = events.filter { !it.isResist }
-                _insights.value = computeInsights(slips)
+                _insights.value = computeInsights(events)
                 _weeklyReport.value = computeWeeklyReport(events)
             }
         }
