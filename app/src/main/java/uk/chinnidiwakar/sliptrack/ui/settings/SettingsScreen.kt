@@ -153,7 +153,7 @@ fun SettingsScreen(
 @Composable
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 fun JourneyNameEditor(currentName: String, onSave: (String) -> Unit) {
-    var text by remember { mutableStateOf(currentName) }
+    var text by remember(currentName) { mutableStateOf(currentName) }
     var isEditing by remember { mutableStateOf(false) }
     var selectedOption by remember { mutableStateOf<String?>(null) }
 

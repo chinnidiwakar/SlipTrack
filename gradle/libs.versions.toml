@@ -18,6 +18,8 @@ ui = "1.10.2"
 uiGraphics = "1.10.2"
 playServicesWearable = "18.2.0"
 kotlinxCoroutinesPlayServices = "1.8.1"
+wearCompose = "1.4.0"
+wearTiles = "1.4.0"
 
 [libraries]
 # Icons - Using the version from the BOM
@@ -53,6 +55,11 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 # Wear OS Data Layer
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesPlayServices" }
+
+androidx-wear-compose-material = { group = "androidx.wear.compose", name = "compose-material", version.ref = "wearCompose" }
+androidx-wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wearCompose" }
+androidx-wear-tiles = { group = "androidx.wear.tiles", name = "tiles", version.ref = "wearTiles" }
+androidx-wear-tiles-material = { group = "androidx.wear.tiles", name = "tiles-material", version.ref = "wearTiles" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
