@@ -11,9 +11,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import uk.chinnidiwakar.sliptrack.domain.ShieldPolicy
+import uk.chinnidiwakar.sliptrack.domain.ShieldState
 import uk.chinnidiwakar.sliptrack.utils.DateUtils.formatElapsedTime
 import uk.chinnidiwakar.sliptrack.utils.normalizeTimestamp
 import uk.chinnidiwakar.sliptrack.utils.toLocalDate
@@ -36,7 +39,6 @@ class HomeViewModel(
             initialValue = "last slip"
         )
 
-    // Function to update the name (called from Settings)
     fun updateJourneyName(newName: String) {
         viewModelScope.launch {
             preferenceManager.saveJourneyName(newName)
@@ -49,6 +51,9 @@ class HomeViewModel(
     private val _longestStreak = MutableStateFlow(0)
     val longestStreak: StateFlow<Int> = _longestStreak
 
+    private val _shieldCharges = MutableStateFlow(0)
+    val shieldCharges: StateFlow<Int> = _shieldCharges.asStateFlow()
+
     private val _uiMessages = MutableSharedFlow<String>()
     val uiMessages: SharedFlow<String> = _uiMessages.asSharedFlow()
 
@@ -56,8 +61,17 @@ class HomeViewModel(
 
     init {
         _dailyQuote.value = QuoteRepository.getQuoteForToday()
+        observeShieldState()
         observeSlips()
         startTimer()
+    }
+
+    private fun observeShieldState() {
+        viewModelScope.launch {
+            preferenceManager.shieldCharges.collect { charges ->
+                _shieldCharges.value = charges
+            }
+        }
     }
 
     private fun observeSlips() {
@@ -86,6 +100,20 @@ class HomeViewModel(
 
                 _currentStreak.value = current
                 _longestStreak.value = maxOf(current, longest)
+                awardShieldsIfNeeded(current)
+            }
+        }
+    }
+
+    private fun awardShieldsIfNeeded(streak: Int) {
+        viewModelScope.launch {
+            val charges = preferenceManager.shieldCharges.first()
+            val highest = preferenceManager.highestShieldMilestoneAwarded.first()
+            val current = ShieldState(charges = charges, highestMilestoneAwarded = highest)
+            val updated = ShieldPolicy.awardForStreak(streak, current)
+            if (updated != current) {
+                preferenceManager.setShieldState(updated.charges, updated.highestMilestoneAwarded)
+                _uiMessages.emit("🛡️ Streak Shield earned for ${updated.highestMilestoneAwarded} days!")
             }
         }
     }
@@ -102,7 +130,6 @@ class HomeViewModel(
         }
     }
 
-    // 1. Add the state flow for the UI to collect
     val themeMode: StateFlow<String> = preferenceManager.themeMode
         .stateIn(
             scope = viewModelScope,
@@ -110,7 +137,6 @@ class HomeViewModel(
             initialValue = "sky"
         )
 
-    // 2. Add the update function
     fun updateTheme(newMode: String) {
         viewModelScope.launch {
             preferenceManager.saveThemeMode(newMode)
@@ -124,6 +150,25 @@ class HomeViewModel(
 
     fun logSlip(triggerLabel: String? = null) {
         viewModelScope.launch {
+            val availableShields = preferenceManager.shieldCharges.first()
+            if (availableShields > 0) {
+                preferenceManager.setShieldState(
+                    charges = availableShields - 1,
+                    highestMilestoneAwarded = preferenceManager.highestShieldMilestoneAwarded.first()
+                )
+                dao.insertSlip(
+                    SlipEvent(
+                        timestamp = System.currentTimeMillis(),
+                        isResist = true,
+                        intensity = 3,
+                        note = "Shield absorbed slip",
+                        trigger = triggerLabel
+                    )
+                )
+                _uiMessages.emit("🛡️ Shield absorbed this slip. Streak protected.")
+                return@launch
+            }
+
             dao.insertSlip(
                 SlipEvent(
                     timestamp = System.currentTimeMillis(),
