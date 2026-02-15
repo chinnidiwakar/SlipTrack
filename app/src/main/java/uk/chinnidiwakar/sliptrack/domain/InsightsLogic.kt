@@ -3,7 +3,6 @@ package uk.chinnidiwakar.sliptrack.domain
 import uk.chinnidiwakar.sliptrack.SlipEvent
 import uk.chinnidiwakar.sliptrack.StreakCalculator
 import uk.chinnidiwakar.sliptrack.utils.toLocalDate
-import uk.chinnidiwakar.sliptrack.utils.toZonedDateTime
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -15,6 +14,9 @@ data class InsightsData(
     val mostCommonDay: String?,
     val weekComparison: String?,
     val averageStreak: String?,
+    val currentStreak: String?,
+    val recentSlipRate: String?,
+    val hardestWindow: String?,
     val topTrigger: String?,
     val suggestedAction: String?,
     val willpowerScore: Int
@@ -85,6 +87,19 @@ fun computeInsights(events: List<SlipEvent>): InsightsData? {
 
     val avg = StreakCalculator.averageStreak(slips)
     val averageStreak = if (avg > 0) "$avg days" else null
+    val currentStreak = "${StreakCalculator.currentStreak(slips)} days"
+
+    val recentSlipRate = recentSlipRate(events)
+
+    val hardestWindow = times
+        .groupingBy { (it.hour / 6) * 6 }
+        .eachCount()
+        .maxByOrNull { it.value }
+        ?.key
+        ?.let { startHour ->
+            val endHour = (startHour + 6) % 24
+            "${formatHour(startHour)}-${formatHour(endHour)}"
+        }
 
     val topTrigger = slips
         .map { it.trigger?.trim().orEmpty() }
@@ -95,13 +110,16 @@ fun computeInsights(events: List<SlipEvent>): InsightsData? {
         .maxByOrNull { it.value }
         ?.key
 
-    val suggestedAction = buildSuggestion(mostCommonHour, topTrigger)
+    val suggestedAction = buildSuggestion(mostCommonHour, topTrigger, hardestWindow)
 
     return InsightsData(
         mostCommonHour = mostCommonHour,
         mostCommonDay = mostCommonDay,
         weekComparison = weekComparison,
         averageStreak = averageStreak,
+        currentStreak = currentStreak,
+        recentSlipRate = recentSlipRate,
+        hardestWindow = hardestWindow,
         topTrigger = topTrigger,
         suggestedAction = suggestedAction,
         willpowerScore = calculateWillpower(events)
@@ -140,8 +158,34 @@ private fun normalizeTimestamp(raw: Long): Long {
     return if (raw < 1_000_000_000_000L) raw * 1000 else raw
 }
 
-private fun buildSuggestion(mostCommonHour: String?, topTrigger: String?): String? {
+private fun recentSlipRate(events: List<SlipEvent>): String? {
+    val today = LocalDate.now()
+    val windowStart = today.minusDays(6)
+
+    val slipsInWindow = events
+        .filter { !it.isResist }
+        .count {
+            Instant.ofEpochMilli(normalizeTimestamp(it.timestamp))
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate() >= windowStart
+        }
+
+    val averagePerDay = slipsInWindow / 7.0
+    return "${"%.2f".format(averagePerDay)} slips/day (7d)"
+}
+
+private fun formatHour(hour24: Int): String {
+    return when {
+        hour24 == 0 -> "12am"
+        hour24 < 12 -> "${hour24}am"
+        hour24 == 12 -> "12pm"
+        else -> "${hour24 - 12}pm"
+    }
+}
+
+private fun buildSuggestion(mostCommonHour: String?, topTrigger: String?, hardestWindow: String?): String? {
     val hourPlan = mostCommonHour?.let { "Set a 15-minute buffer routine before $it (walk, shower, journal)." }
+    val windowPlan = hardestWindow?.let { "Your highest-risk window is $it; pre-plan one healthy distraction there." }
 
     val triggerPlan = when (topTrigger) {
         null -> null
@@ -153,5 +197,5 @@ private fun buildSuggestion(mostCommonHour: String?, topTrigger: String?): Strin
         else -> "Top trigger: $topTrigger. Create a short pre-commit plan for that situation."
     }
 
-    return listOfNotNull(triggerPlan, hourPlan).joinToString(" ").ifBlank { null }
+    return listOfNotNull(triggerPlan, windowPlan, hourPlan).joinToString(" ").ifBlank { null }
 }
