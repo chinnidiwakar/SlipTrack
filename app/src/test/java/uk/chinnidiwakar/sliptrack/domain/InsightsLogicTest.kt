@@ -34,14 +34,15 @@ class InsightsLogicTest {
 
     @Test
     fun computeInsights_populatesAllFieldsForValidData() {
-        val slips = listOf(
+        val events = listOf(
             SlipEvent(timestamp = epochMillis(10, 21), trigger = "Stress"),
             SlipEvent(timestamp = epochMillis(7, 21), trigger = "Stress"),
             SlipEvent(timestamp = epochMillis(3, 21), trigger = "Boredom"),
-            SlipEvent(timestamp = epochMillis(1, 10), trigger = "Stress")
+            SlipEvent(timestamp = epochMillis(1, 10), trigger = "Stress"),
+            SlipEvent(timestamp = epochMillis(0, 11), isResist = true)
         )
 
-        val insights = computeInsights(slips)
+        val insights = computeInsights(events)
 
         assertNotNull(insights)
         assertEquals("9 PM", insights?.mostCommonHour)
@@ -50,6 +51,22 @@ class InsightsLogicTest {
         assertEquals("Stress", insights?.topTrigger)
         assertTrue(insights?.suggestedAction?.isNotBlank() == true)
     }
+
+    @Test
+    fun computeInsights_willpowerUsesAllEventsNotJustSlips() {
+        val events = listOf(
+            SlipEvent(timestamp = epochMillis(5, 21), isResist = false),
+            SlipEvent(timestamp = epochMillis(4, 21), isResist = false),
+            SlipEvent(timestamp = epochMillis(3, 21), isResist = false),
+            SlipEvent(timestamp = epochMillis(2, 9), isResist = true)
+        )
+
+        val insights = computeInsights(events)
+
+        assertNotNull(insights)
+        assertEquals(25, insights?.willpowerScore)
+    }
+
     @Test
     fun computeWeeklyReport_countsWeeklySlipsVictoriesAndCleanDays() {
         val report = computeWeeklyReport(
