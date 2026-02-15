@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wearableApp package="uk.chinnidiwakar.sliptrack.wearapp">
+    <versionCode>1</versionCode>
+    <versionName>0.1</versionName>
+    <rawPathResId>wearable_app</rawPathResId>
+</wearableApp>

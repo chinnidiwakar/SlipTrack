@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "SlipTrack"
 include(":app")
+include(":wear")
