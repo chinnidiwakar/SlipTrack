@@ -1,25 +1,37 @@
 package uk.chinnidiwakar.sliptrack.ui.settings
 
 import android.content.Context
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.NightsStay
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,129 +57,78 @@ fun SettingsScreen(
     onImport: () -> Unit,
 ) {
     val journeyName by viewModel.journeyName.collectAsState()
-    // 1. Fixed: Collect the theme mode from the ViewModel
     val themeMode by viewModel.themeMode.collectAsState()
-
-    var textInput by remember { mutableStateOf("") }
     val context = LocalContext.current
     val appVersion = remember(context) { getAppVersion(context) }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            Text(
-                text = "Settings",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(20.dp)
-            )
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
+                Text("Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
+            }
 
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // CATEGORY: JOURNEY
-                item { SettingsCategoryHeader("Your Journey") }
+                // CATEGORY: MINDSET (Sattvic / Hindu focus)
                 item {
-                    Column {
-                        Text("What are you tracking?", style = MaterialTheme.typography.labelLarge)
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = textInput,
-                            onValueChange = { textInput = it },
-                            placeholder = { Text(journeyName) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
+                    SettingsSection(title = "Mindset & Purpose") {
+                        JourneyNameEditor(
+                            currentName = journeyName,
+                            onSave = { viewModel.updateJourneyName(it) }
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = {
-                                    if (textInput.isNotBlank()) viewModel.updateJourneyName(textInput)
-                                    textInput = ""
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) { Text("Save Name") }
-                            TextButton(onClick = { viewModel.updateJourneyName("last slip") }) {
-                                Text("Reset")
-                            }
-                        }
-                    }
-                }
-
-                // CATEGORY: APPEARANCE
-                item { SettingsCategoryHeader("Appearance") }
-                item {
-                    SettingsToggleRow(
-                        title = "AMOLED Sky Mode",
-                        subtitle = "Deep blacks & streak-based colors",
-                        checked = themeMode == "sky",
-                        onCheckedChange = { isSky ->
-                            viewModel.updateTheme(if (isSky) "sky" else "material")
-                        }
-                    )
-                }
-
-                // CATEGORY: DATA & PRIVACY
-                item { SettingsCategoryHeader("Data & Privacy") }
-                item {
-                    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                        Text(
-                            text = "Your data is stored locally. We never collect or see your habits.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        HorizontalDivider(color = Color.White.copy(0.05f))
+                        // Suggestion: A "Sankalpa" (Intention) reminder toggle
+                        SettingsToggleRow(
+                            title = "Daily Sankalpa",
+                            subtitle = "Morning reminder of your intention",
+                            checked = true, // You'd bind this to a pref
+                            icon = Icons.Default.SelfImprovement,
+                            onCheckedChange = { /* Toggle logic */ }
                         )
                     }
                 }
 
-                // 2. RE-ADDED: The Export Button
+                // CATEGORY: DATA CONTROL
                 item {
-                    SettingsClickableRow(
-                        title = "Export Backup",
-                        subtitle = "Save your data as a JSON file",
-                        icon = "📥",
-                        onClick = onExport
-                    )
+                    SettingsSection(
+                        title = "Vault",
+                        footer = "Your progress is sacred. It stays on this device."
+                    ) {
+                        SettingsClickableRow("Export Journey", "Backup your data", Icons.Default.History, onExport)
+                        HorizontalDivider(color = Color.White.copy(0.05f))
+                        SettingsClickableRow("Import Journey", "Restore progress", Icons.Default.Restore, onImport)
+                    }
                 }
 
+                // CATEGORY: VISUALS
                 item {
-                    SettingsClickableRow(
-                        title = "Import Backup",
-                        subtitle = "Restore journey from a file",
-                        icon = "📤",
-                        onClick = onImport
-                    )
-                }
-
-                // CATEGORY: ABOUT
-                item { SettingsCategoryHeader("About SlipTrack") }
-                item {
-                    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                        Text(
-                            text = "A mindful tool to ride the waves of urges through awareness.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    SettingsSection(title = "Environment") {
+                        SettingsToggleRow(
+                            title = "AMOLED Sky",
+                            subtitle = "Zero light pollution",
+                            checked = themeMode == "sky",
+                            icon = Icons.Default.NightsStay,
+                            onCheckedChange = { isSky -> viewModel.updateTheme(if (isSky) "sky" else "material") }
                         )
                     }
                 }
 
-                item { SettingsInfoRow(title = "Version", value = appVersion) }
-                item { SettingsInfoRow(title = "Developer", value = "FalconRising") }
-
-                // BACK BUTTON
+                // INFO
                 item {
-                    Spacer(Modifier.height(24.dp))
-                    Button(
-                        onClick = onNavigateBack,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    ) { Text("Back to Home") }
+                    SettingsSection(title = "App Info") {
+                        SettingsInfoRow("Version", appVersion)
+                        SettingsInfoRow("Developer", "FalconRising")
+                    }
                 }
             }
         }
@@ -174,67 +136,85 @@ fun SettingsScreen(
 }
 
 @Composable
-fun SettingsCategoryHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-    )
+fun JourneyNameEditor(currentName: String, onSave: (String) -> Unit) {
+    var text by remember { mutableStateOf("") }
+    var isEditing by remember { mutableStateOf(false) }
+
+    if (!isEditing) {
+        SettingsClickableRow(
+            title = "Current Goal",
+            subtitle = currentName,
+            icon = Icons.Default.Flag,
+            onClick = { isEditing = true }
+        )
+    } else {
+        Column(Modifier.padding(16.dp)) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("Set New Goal") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            )
+            Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                TextButton(onClick = { isEditing = false }) { Text("Cancel") }
+                Button(onClick = { onSave(text); isEditing = false }) { Text("Save") }
+            }
+        }
+    }
+}
+
+// --- GLASSMOPHISM UTILS ---
+
+@Composable
+fun SettingsSection(title: String, footer: String? = null, content: @Composable ColumnScope.() -> Unit) {
+    Column {
+        Text(title.uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 12.dp, bottom = 8.dp), letterSpacing = 1.sp)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            color = Color.White.copy(alpha = 0.05f), // True Glass look
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+        ) {
+            Column(content = content)
+        }
+        footer?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Color.Gray, modifier = Modifier.padding(12.dp)) }
+    }
 }
 
 @Composable
-fun SettingsClickableRow(title: String, subtitle: String, icon: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = icon, fontSize = 20.sp)
+fun SettingsClickableRow(title: String, subtitle: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
         Spacer(Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-            Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(0.6f))
+        Column {
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
     }
 }
 
 @Composable
-fun SettingsToggleRow(title: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-            Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(0.6f))
+fun SettingsToggleRow(title: String, subtitle: String, checked: Boolean, icon: androidx.compose.ui.graphics.vector.ImageVector, onCheckedChange: (Boolean) -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
-        androidx.compose.material3.Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
 @Composable
 fun SettingsInfoRow(title: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = title, style = MaterialTheme.typography.bodyLarge)
-        Text(text = value, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface.copy(0.6f))
+    Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(title, fontWeight = FontWeight.Medium)
+        Text(value, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
     }
 }
 
 fun getAppVersion(context: Context): String {
-    return try {
-        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-        packageInfo.versionName ?: "Unknown"
-    } catch (e: Exception) {
-        "1.0.0"
-    }
+    return try { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0" } catch (e: Exception) { "1.0" }
 }
