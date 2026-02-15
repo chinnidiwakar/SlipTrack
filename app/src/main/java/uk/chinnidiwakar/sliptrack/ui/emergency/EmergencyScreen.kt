@@ -1,17 +1,17 @@
 package uk.chinnidiwakar.sliptrack.ui.emergency
 
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,191 +21,232 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PointMode
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 
 @Composable
 fun EmergencyScreen(onClose: () -> Unit) {
-    var timeLeft by remember { mutableIntStateOf(15 * 60) } // 15 minutes in seconds
-    var isTimerRunning by remember { mutableStateOf(false) }
-
-    // Animation for the Wave
-    val infiniteTransition = rememberInfiniteTransition(label = "wave")
-    val waveOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 2f * Math.PI.toFloat(),
-        animationSpec = infiniteRepeatable(tween(2000, easing = LinearEasing)),
-        label = "waveOffset"
-    )
-    // Timer Logic
-    LaunchedEffect(isTimerRunning) {
-        if (isTimerRunning) {
-            while (timeLeft > 0) {
-                delay(1000)
-                timeLeft--
-            }
-        }
-    }
-
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Ride the Wave", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-
-        // The Wave Canvas
-        Canvas(modifier = Modifier.fillMaxWidth().height(150.dp)) {
-            val width = size.width
-            val height = size.height
-            val points = mutableListOf<Offset>()
-
-            for (x in 0..width.toInt() step 5) {
-                val y = (Math.sin((x.toDouble() / width * 4 * Math.PI) + waveOffset).toFloat() * 40f) + (height / 2)
-                points.add(Offset(x.toFloat(), y))
-            }
-
-            drawPoints(points = points, pointMode = PointMode.Polygon, color = Color(0xFF4FC3F7), strokeWidth = 5f)
-        }
-
-        Text(
-            text = String.format("%02d:%02d", timeLeft / 60, timeLeft % 60),
-            fontSize = 48.sp,
-            fontWeight = FontWeight.Light
-        )
-
-        Button(
-            onClick = { isTimerRunning = !isTimerRunning },
-            modifier = Modifier.padding(vertical = 16.dp)
-        ) {
-            Text(if (isTimerRunning) "Pause Wave" else "Start Riding the Wave")
-        }
-
-        Text(
-            "Just 15 minutes. That's all you need to win.",
-            textAlign = TextAlign.Center,
-            color = Color.Gray
-        )
-    }
-
+    var selectedMode by remember { mutableStateOf("Wave") }
     var step by remember { mutableStateOf(0) }
     val haptic = LocalHapticFeedback.current
+
     val steps = listOf(
-        "Step 1: Pause. Take 10 slow breaths before any action.",
-        "Step 2: Change your environment now (stand up, leave room, cold water).",
-        "Step 3: Run a 10-minute replacement (walk, pushups, journaling, shower).",
-        "Step 4: Message one trusted person: 'I need a quick check-in.'",
-        "Step 5: If urge remains, log it as a victory with trigger + intensity."
+        "Take a deep breath. This feeling is just a chemical signal. It will pass.",
+        "Drink a glass of cold water. Change your physical environment immediately.",
+        "Set a timer for 15 minutes. Tell yourself: 'I can decide again when the timer ends.'",
+        "Recall why you started. Discipline is choosing between what you want now and what you want most.",
+        "Connect with your 'Future Self'. Visualize the peace of tomorrow morning if you stay strong now."
     )
-    var isBreathing by remember { mutableStateOf(false) }
 
-    // This animates a circle to guide breathing
-    val breatheScale by animateFloatAsState(
-        targetValue = if (isBreathing) 1.5f else 1f, // If off, stay at 1f
-        animationSpec = if (isBreathing) {
-            infiniteRepeatable(
-                animation = tween(4000, easing = LinearOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color(0xFF000000) // Deep Tamas Black for focus
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Header
+            Text(
+                "Urge Emergency",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
-        } else {
-            tween(500) // Smoothly shrink back to normal when turned off
-        },
-        label = "breathe"
-    )
 
-    LaunchedEffect(breatheScale) {
-        if (isBreathing) {
-            if (breatheScale >= 1.49f || breatheScale <= 1.01f) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            }
-        }
-    }
+            Spacer(Modifier.height(20.dp))
 
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(24.dp)) {
-
-            Text("Immediate Calm", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-
-            // The Breathing Circle
-            Box(
-                modifier = Modifier.fillMaxWidth().height(250.dp),
-                contentAlignment = Alignment.Center
+            // MODE TOGGLE (Segmented Control)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.White.copy(alpha = 0.1f))
             ) {
-                // Outer Glow
-                Surface(
-                    modifier = Modifier.size(120.dp * breatheScale),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
-                ) {}
-
-                // Interaction Button
-                Button(
-                    onClick = { isBreathing = !isBreathing },
-                    shape = CircleShape,
-                    modifier = Modifier.size(100.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isBreathing) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text(
-                        text = if (isBreathing) "Stop" else "Breathe",
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold
-                    )
+                listOf("Wave", "Breathe").forEach { mode ->
+                    val isSelected = selectedMode == mode
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(4.dp),
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = RoundedCornerShape(20.dp),
+                        onClick = {
+                            selectedMode = mode
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = mode,
+                                color = if (isSelected) Color.Black else Color.White,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                 }
             }
 
-            Text("Emergency Protocol", fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 16.dp))
+            Spacer(Modifier.weight(0.5f))
 
-            // The Protocol Card
+            // VISUALIZER BOX
+            Box(
+                modifier = Modifier.size(280.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (selectedMode == "Wave") {
+                    UrgeWaveVisualizer()
+                } else {
+                    BoxBreathingVisualizer()
+                }
+            }
+
+            Spacer(Modifier.weight(0.5f))
+
+            // EMERGENCY PROTOCOL STEPS
+            Text(
+                "Protocol Step ${step + 1} of ${steps.size}",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+
             Card(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
                     text = steps[step],
                     modifier = Modifier.padding(20.dp),
-                    style = MaterialTheme.typography.bodyLarge
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
                 )
             }
 
-            // Next Step Button
             Button(
                 onClick = {
                     if (step < steps.lastIndex) step++ else step = 0
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 },
-                modifier = Modifier.fillMaxWidth().height(56.dp)
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text(if (step < steps.lastIndex) "Next Step" else "Restart Protocol")
             }
 
-            Spacer(Modifier.weight(1f))
+            TextButton(onClick = onClose, modifier = Modifier.padding(top = 16.dp)) {
+                Text("I am calm now", color = Color.White.copy(alpha = 0.6f))
+            }
+        }
+    }
+}
 
-            TextButton(
-                onClick = onClose,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) {
-                Text("I feel better now, go back", color = MaterialTheme.colorScheme.primary)
+@Composable
+fun UrgeWaveVisualizer() {
+    val transition = rememberInfiniteTransition(label = "WaveTransition")
+
+    // Three different offsets for three different layers
+    val waveOffset1 by transition.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing))
+    )
+    val waveOffset2 by transition.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2500, easing = LinearEasing))
+    )
+
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val width = size.width
+        val height = size.height
+
+        fun drawWave(offset: Float, color: Color, amplitude: Float, strokeWidth: Float) {
+            val path = Path()
+            path.moveTo(0f, height / 2)
+            for (x in 0..width.toInt() step 5) {
+                val relativeX = x / width
+                val sine = kotlin.math.sin((relativeX + offset) * 2 * kotlin.math.PI)
+                val y = (height / 2) + (sine * amplitude).toFloat()
+                path.lineTo(x.toFloat(), y)
+            }
+            drawPath(path, color = color, style = Stroke(width = strokeWidth))
+        }
+
+        // Layer 1: Background slow wave
+        drawWave(waveOffset1, Color(0xFF1E88E5).copy(alpha = 0.3f), 60f, 2.dp.toPx())
+        // Layer 2: Faster mid wave
+        drawWave(waveOffset2, Color(0xFF64B5F6).copy(alpha = 0.6f), 40f, 3.dp.toPx())
+        // Layer 3: Main focus wave
+        drawWave(waveOffset1 * -1.2f, Color(0xFFBBDEFB), 25f, 5.dp.toPx())
+    }
+}
+
+@Composable
+fun BoxBreathingVisualizer() {
+    val transition = rememberInfiniteTransition(label = "BreatheTransition")
+
+    // This creates a 4-part cycle (In, Hold, Out, Hold)
+    val progress by transition.animateFloat(
+        initialValue = 0f, targetValue = 4f,
+        animationSpec = infiniteRepeatable(tween(16000, easing = LinearEasing))
+    )
+
+    val (text, scale) = when {
+        progress < 1f -> "Inhale" to 0.6f + (progress * 0.4f)      // Growing
+        progress < 2f -> "Hold" to 1.0f                            // Full
+        progress < 3f -> "Exhale" to 1.0f - ((progress - 2f) * 0.4f) // Shrinking
+        else -> "Hold" to 0.6f                                     // Empty
+    }
+
+    Box(contentAlignment = Alignment.Center) {
+        // Pulse Effect
+        Surface(
+            modifier = Modifier.size(240.dp * scale),
+            shape = CircleShape,
+            color = Color(0xFF81C784).copy(alpha = 0.1f)
+        ) {}
+
+        Surface(
+            modifier = Modifier.size(160.dp * scale),
+            shape = CircleShape,
+            color = if (text == "Hold") Color(0xFFFFB74D) else Color(0xFF81C784),
+            shadowElevation = 8.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
             }
         }
     }

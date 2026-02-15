@@ -1,6 +1,9 @@
 package uk.chinnidiwakar.sliptrack.ui.insights
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,10 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,19 +23,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import uk.chinnidiwakar.sliptrack.InsightsViewModel
 import uk.chinnidiwakar.sliptrack.InsightsViewModelFactory
 
 @Composable
 fun InsightsScreen() {
     val context = LocalContext.current
-    val viewModel: InsightsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-        factory = InsightsViewModelFactory(context)
-    )
+    val viewModel: InsightsViewModel = viewModel(factory = InsightsViewModelFactory(context))
 
     val insights by viewModel.insights.collectAsState()
     val weeklyReport by viewModel.weeklyReport.collectAsState()
@@ -42,78 +44,85 @@ fun InsightsScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp)
-                .statusBarsPadding(),
+                .padding(horizontal = 20.dp)
+                .statusBarsPadding()
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Spacer(Modifier.height(8.dp))
+
             Text(
                 "Insights",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.5.sp
             )
 
+            // --- Weekly Summary Glass Card ---
             InsightCard(
-                "Weekly report",
-                "${weeklyReport.cleanDaysThisWeek} clean days • ${weeklyReport.victoriesThisWeek} victories • ${weeklyReport.slipsThisWeek} slips"
+                "Weekly Report",
+                "${weeklyReport.cleanDaysThisWeek} Clean • ${weeklyReport.victoriesThisWeek} Won • ${weeklyReport.slipsThisWeek} Slips"
             )
 
-            // ... inside your Column ...
             if (insights == null) {
-                // Show "Willpower Meter" even with low data to encourage them
                 WillpowerMeter(weeklyReport.victoriesThisWeek, weeklyReport.slipsThisWeek)
             } else {
-                Text("Pattern Analysis", style = MaterialTheme.typography.labelLarge)
+                Text("Pattern Analysis", style = MaterialTheme.typography.labelLarge, color = Color.Gray)
 
-                // Group 1: The Danger Zones (Red/Warning vibe)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // --- Danger Zones (Side by Side Glass) ---
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     MiniInsightCard("Danger Hour", insights!!.mostCommonHour ?: "--", Modifier.weight(1f))
                     MiniInsightCard("Hardest Day", insights!!.mostCommonDay ?: "--", Modifier.weight(1f))
                 }
 
-                // Group 2: The Coach (AI/Suggestion vibe)
+                // --- Smart Recovery Plan (Glow Glass) ---
                 insights?.suggestedAction?.let { action ->
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                        shape = RoundedCornerShape(16.dp)
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f),
+                        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                     ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text("Smart Recovery Plan", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Spacer(Modifier.height(4.dp))
-                            Text(action, fontSize = 15.sp, lineHeight = 20.sp)
+                        Column(Modifier.padding(20.dp)) {
+                            Text("Smart Recovery Plan", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.height(8.dp))
+                            Text(action, fontSize = 15.sp, lineHeight = 22.sp, fontWeight = FontWeight.Medium)
                         }
                     }
                 }
 
                 WillpowerMeter(score = insights!!.willpowerScore)
-
-                Text("Pattern Analysis", style = MaterialTheme.typography.labelLarge)
             }
+
+            Spacer(Modifier.height(32.dp))
         }
+    }
+}
+
+// --- REUSABLE GLASS CONTAINER ---
+@Composable
+fun GlassCard(
+    modifier: Modifier = Modifier,
+    opacity: Float = 0.2f,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = opacity),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+        tonalElevation = 2.dp
+    ) {
+        content()
     }
 }
 
 @Composable
 fun InsightCard(title: String, value: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(1.dp)
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Text(
-                title,
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            Text(
-                value,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+    GlassCard(opacity = 0.25f) {
+        Column(Modifier.padding(20.dp)) {
+            Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+            Spacer(Modifier.height(4.dp))
+            Text(value, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -122,22 +131,35 @@ fun InsightCard(title: String, value: String) {
 fun WillpowerMeter(score: Int) {
     val floatScore = score / 100f
 
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Overall Resilience", fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = floatScore,
-                modifier = Modifier.fillMaxWidth().height(8.dp),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
-            )
-            Text("$score% of urges defeated", fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
+    GlassCard(opacity = 0.2f) {
+        Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Overall Resilience", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text("$score%", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            }
+            Spacer(Modifier.height(12.dp))
+
+            // Modernized Progress Bar
+            Box(contentAlignment = Alignment.CenterStart) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(100))
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(floatScore)
+                        .height(10.dp)
+                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(100))
+                )
+            }
+
+            Text("Defeated $score% of recorded urges", fontSize = 11.sp, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }
 
-// Overload to handle the "Weekly" case from step 2
 @Composable
 fun WillpowerMeter(victories: Int, slips: Int) {
     val total = (victories + slips).coerceAtLeast(1)
@@ -147,24 +169,11 @@ fun WillpowerMeter(victories: Int, slips: Int) {
 
 @Composable
 fun MiniInsightCard(title: String, value: String, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(1.dp)
-    ) {
-        Column(Modifier.padding(12.dp)) {
-            Text(
-                title,
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            Text(
-                value,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+    GlassCard(modifier = modifier, opacity = 0.25f) {
+        Column(Modifier.padding(16.dp)) {
+            Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+            Spacer(Modifier.height(4.dp))
+            Text(value, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
         }
     }
 }

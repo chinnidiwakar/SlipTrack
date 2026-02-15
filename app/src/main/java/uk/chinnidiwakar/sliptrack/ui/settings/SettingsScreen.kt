@@ -44,6 +44,9 @@ fun SettingsScreen(
     onImport: () -> Unit,
 ) {
     val journeyName by viewModel.journeyName.collectAsState()
+    // 1. Fixed: Collect the theme mode from the ViewModel
+    val themeMode by viewModel.themeMode.collectAsState()
+
     var textInput by remember { mutableStateOf("") }
     val context = LocalContext.current
     val appVersion = remember(context) { getAppVersion(context) }
@@ -82,13 +85,11 @@ fun SettingsScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
                                 onClick = {
-                                    viewModel.updateJourneyName(textInput)
+                                    if (textInput.isNotBlank()) viewModel.updateJourneyName(textInput)
                                     textInput = ""
                                 },
                                 modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Save Name")
-                            }
+                            ) { Text("Save Name") }
                             TextButton(onClick = { viewModel.updateJourneyName("last slip") }) {
                                 Text("Reset")
                             }
@@ -96,21 +97,45 @@ fun SettingsScreen(
                     }
                 }
 
-                // CATEGORY: DATA
+                // CATEGORY: APPEARANCE
+                item { SettingsCategoryHeader("Appearance") }
+                item {
+                    SettingsToggleRow(
+                        title = "AMOLED Sky Mode",
+                        subtitle = "Deep blacks & streak-based colors",
+                        checked = themeMode == "sky",
+                        onCheckedChange = { isSky ->
+                            viewModel.updateTheme(if (isSky) "sky" else "material")
+                        }
+                    )
+                }
+
+                // CATEGORY: DATA & PRIVACY
                 item { SettingsCategoryHeader("Data & Privacy") }
                 item {
                     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                         Text(
-                            text = "Your data is stored locally on your device. We do not use cloud sync, and we never collect or see your slips or habits.",
+                            text = "Your data is stored locally. We never collect or see your habits.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                     }
                 }
+
+                // 2. RE-ADDED: The Export Button
+                item {
+                    SettingsClickableRow(
+                        title = "Export Backup",
+                        subtitle = "Save your data as a JSON file",
+                        icon = "📥",
+                        onClick = onExport
+                    )
+                }
+
                 item {
                     SettingsClickableRow(
                         title = "Import Backup",
-                        subtitle = "Restore journey from a previous file",
+                        subtitle = "Restore journey from a file",
                         icon = "📤",
                         onClick = onImport
                     )
@@ -121,16 +146,15 @@ fun SettingsScreen(
                 item {
                     Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                         Text(
-                            text = "SlipTrack is a mindful recovery tool designed to help you ride the waves of urges through awareness and discipline.",
+                            text = "A mindful tool to ride the waves of urges through awareness.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                     }
                 }
 
-                item {
-                    SettingsInfoRow(title = "Developer", value = "FalconRising")
-                }
+                item { SettingsInfoRow(title = "Version", value = appVersion) }
+                item { SettingsInfoRow(title = "Developer", value = "FalconRising") }
 
                 // BACK BUTTON
                 item {
@@ -142,9 +166,7 @@ fun SettingsScreen(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    ) {
-                        Text("Back to Home")
-                    }
+                    ) { Text("Back to Home") }
                 }
             }
         }

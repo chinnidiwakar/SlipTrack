@@ -100,6 +100,21 @@ class HomeViewModel(
         }
     }
 
+    // 1. Add the state flow for the UI to collect
+    val themeMode: StateFlow<String> = preferenceManager.themeMode
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "sky"
+        )
+
+    // 2. Add the update function
+    fun updateTheme(newMode: String) {
+        viewModelScope.launch {
+            preferenceManager.saveThemeMode(newMode)
+        }
+    }
+
     private fun normalizeTimestamp(raw: Long): Long {
         return if (raw < 1_000_000_000_000L) raw * 1000 else raw
     }

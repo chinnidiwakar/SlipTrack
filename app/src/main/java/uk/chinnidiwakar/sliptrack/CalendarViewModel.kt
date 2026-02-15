@@ -9,9 +9,29 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import uk.chinnidiwakar.sliptrack.ui.calendar.CalendarDay
+import uk.chinnidiwakar.sliptrack.ui.calendar.DaySummary
 import uk.chinnidiwakar.sliptrack.utils.buildCalendarDays
+import uk.chinnidiwakar.sliptrack.utils.buildDaySummaries
 import java.time.LocalDate
 import java.time.YearMonth
+
+class HistoryViewModel(private val dao: SlipDao) : ViewModel() {
+    private val _history = MutableStateFlow<List<DaySummary>>(emptyList())
+    val history: StateFlow<List<DaySummary>> = _history
+
+    init {
+        observeHistory()
+    }
+
+    private fun observeHistory() {
+        viewModelScope.launch {
+            // Using the reactive flow from your SlipDao
+            dao.observeAllSlips().collect { slips ->
+                _history.value = buildDaySummaries(slips)
+            }
+        }
+    }
+}
 
 class CalendarViewModel(context: Context) : ViewModel() {
 

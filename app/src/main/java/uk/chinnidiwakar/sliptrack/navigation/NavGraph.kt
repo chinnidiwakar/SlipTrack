@@ -5,7 +5,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
@@ -38,7 +37,6 @@ import uk.chinnidiwakar.sliptrack.InsightsViewModelFactory
 import uk.chinnidiwakar.sliptrack.PreferenceManager
 import uk.chinnidiwakar.sliptrack.ui.calendar.CalendarScreen
 import uk.chinnidiwakar.sliptrack.ui.emergency.EmergencyScreen
-import uk.chinnidiwakar.sliptrack.ui.history.HistoryScreen
 import uk.chinnidiwakar.sliptrack.ui.home.HomeScreen
 import uk.chinnidiwakar.sliptrack.ui.insights.InsightsScreen
 import uk.chinnidiwakar.sliptrack.ui.settings.SettingsScreen
@@ -46,7 +44,6 @@ import uk.chinnidiwakar.sliptrack.ui.settings.SettingsScreen
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
-    object History : Screen("history")
     object Calendar : Screen("calendar")
     object Insights : Screen("insights")
     object Emergency : Screen("emergency")
@@ -81,7 +78,6 @@ fun AppNavigation() {
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(Screen.Home.route) { HomeScreen(navController = navController) }
-            composable(Screen.History.route) { HistoryScreen() }
             composable(Screen.Calendar.route) { CalendarScreen() }
             composable(Screen.Insights.route) { InsightsScreen() }
             composable(Screen.Emergency.route) { EmergencyScreen(onClose = { navController.popBackStack() }) }
@@ -151,23 +147,6 @@ fun BottomNavigationBar(navController: NavController) {
             },
             label = { Text("Home") },
             icon = { Icon(Icons.Default.Home, null) }
-        )
-
-        NavigationBarItem(
-            selected = currentRoute == Screen.History.route,
-            onClick = {
-                if (currentRoute != Screen.History.route) { // 👈 Prevents reloading if already there
-                    navController.navigate(Screen.History.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            },
-            label = { Text("History") },
-            icon = { Icon(Icons.AutoMirrored.Filled.List, null) }
         )
 
         NavigationBarItem(

@@ -14,17 +14,28 @@ class PreferenceManager(context: Context) {
 
     companion object {
         val JOURNEY_NAME = stringPreferencesKey("journey_name")
+        val THEME_MODE = stringPreferencesKey("theme_mode") // Key for Amoled vs Material
     }
 
-    // Get the name (defaults to "last slip" if empty)
+    // --- Journey Name ---
     val journeyName: Flow<String> = dataStore.data.map { prefs ->
         prefs[JOURNEY_NAME] ?: "last slip"
     }
 
-    // Save the name
     suspend fun saveJourneyName(name: String) {
         dataStore.edit { prefs ->
             prefs[JOURNEY_NAME] = name
+        }
+    }
+
+    // --- Theme Mode ---
+    val themeMode: Flow<String> = dataStore.data.map { prefs ->
+        prefs[THEME_MODE] ?: "sky" // Default to Amoled Sky
+    }
+
+    suspend fun saveThemeMode(mode: String) {
+        dataStore.edit { prefs ->
+            prefs[THEME_MODE] = mode
         }
     }
 }
