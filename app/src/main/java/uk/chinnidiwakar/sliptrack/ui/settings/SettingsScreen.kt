@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +26,9 @@ import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +52,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import uk.chinnidiwakar.sliptrack.HomeViewModel
+
+private val DEFAULT_JOURNEY_OPTIONS = listOf(
+    "Drugs",
+    "Porn",
+    "Mobile",
+    "Alcohol",
+    "Smoking",
+    "Gambling",
+    "Sugar",
+    "Social Media"
+)
 
 @Composable
 fun SettingsScreen(
@@ -136,9 +151,11 @@ fun SettingsScreen(
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 fun JourneyNameEditor(currentName: String, onSave: (String) -> Unit) {
-    var text by remember { mutableStateOf("") }
+    var text by remember { mutableStateOf(currentName) }
     var isEditing by remember { mutableStateOf(false) }
+    var selectedOption by remember { mutableStateOf<String?>(null) }
 
     if (!isEditing) {
         SettingsClickableRow(
@@ -149,16 +166,55 @@ fun JourneyNameEditor(currentName: String, onSave: (String) -> Unit) {
         )
     } else {
         Column(Modifier.padding(16.dp)) {
+            Text(
+                "Choose your focus",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                DEFAULT_JOURNEY_OPTIONS.forEach { option ->
+                    FilterChip(
+                        selected = selectedOption == option,
+                        onClick = {
+                            selectedOption = option
+                            text = option
+                        },
+                        label = { Text(option) }
+                    )
+                }
+            }
+
             OutlinedTextField(
                 value = text,
-                onValueChange = { text = it },
-                label = { Text("Set New Goal") },
+                onValueChange = {
+                    text = it
+                    selectedOption = DEFAULT_JOURNEY_OPTIONS.firstOrNull { option ->
+                        option.equals(it.trim(), ignoreCase = true)
+                    }
+                },
+                label = { Text("Custom goal (or edit selection)") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp)
             )
             Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                TextButton(onClick = { isEditing = false }) { Text("Cancel") }
-                Button(onClick = { onSave(text); isEditing = false }) { Text("Save") }
+                TextButton(
+                    onClick = {
+                        text = currentName
+                        selectedOption = null
+                        isEditing = false
+                    }
+                ) { Text("Cancel") }
+                Button(
+                    onClick = {
+                        val finalName = text.trim().ifEmpty { currentName }
+                        onSave(finalName)
+                        isEditing = false
+                    }
+                ) { Text("Save") }
             }
         }
     }
