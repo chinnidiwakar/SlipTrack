@@ -13,6 +13,14 @@
         android:roundIcon="@mipmap/hallucination"
         android:supportsRtl="true"
         android:theme="@style/Theme.SlipTrack">
+        <service
+            android:name=".wear.WearDataLayerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
+            </intent-filter>
+        </service>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

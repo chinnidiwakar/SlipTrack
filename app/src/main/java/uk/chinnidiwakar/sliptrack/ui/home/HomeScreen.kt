@@ -80,6 +80,7 @@ fun HomeScreen(navController: NavController) {
     val currentStreak by viewModel.currentStreak.collectAsState()
     val longestStreak by viewModel.longestStreak.collectAsState()
     val quote by viewModel.dailyQuote.collectAsState()
+    val shieldCharges by viewModel.shieldCharges.collectAsState()
 
     var showVictoryDialog by remember { mutableStateOf(false) }
     var showSlipDialog by remember { mutableStateOf(false) }
@@ -163,7 +164,18 @@ fun HomeScreen(navController: NavController) {
                         Text("Resist 🛡️", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                     Button(onClick = { navController.navigate("emergency") }, modifier = Modifier.size(60.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error), shape = RoundedCornerShape(20.dp), contentPadding = PaddingValues(0.dp)) {
-                        Icon(Icons.Default.Shield, contentDescription = "SOS", tint = Color.White)
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Shield, contentDescription = "SOS", tint = Color.White)
+                            if (shieldCharges > 0) {
+                                Text(
+                                    text = shieldCharges.toString(),
+                                    color = Color(0xFFFFE082),
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 2.dp)
+                                )
+                            }
+                        }
                     }
                     Button(onClick = { showSlipDialog = true }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)), shape = RoundedCornerShape(20.dp)) {
                         Text("Slip", fontSize = 14.sp, fontWeight = FontWeight.Bold)
