@@ -1,17 +1,19 @@
 package uk.chinnidiwakar.sliptrack
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import uk.chinnidiwakar.sliptrack.utils.toLocalDate
 
 class StreakWorker(
     appContext: Context,
@@ -34,13 +36,8 @@ class StreakWorker(
     }
 
     private fun daysSince(timestamp: Long): Int {
-        val zone = ZoneId.systemDefault()
-        val lastDate = Instant.ofEpochMilli(normalizeTimestamp(timestamp)).atZone(zone).toLocalDate()
+        val lastDate = toLocalDate(timestamp)
         return ChronoUnit.DAYS.between(lastDate, LocalDate.now()).toInt()
-    }
-
-    private fun normalizeTimestamp(raw: Long): Long {
-        return if (raw < 1_000_000_000_000L) raw * 1000 else raw
     }
 
     private fun createNotificationChannel() {
@@ -74,6 +71,15 @@ class StreakWorker(
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ActivityCompat.checkSelfPermission(
+                applicationContext,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
 
         NotificationManagerCompat.from(applicationContext).notify(streakDays, notification)
     }

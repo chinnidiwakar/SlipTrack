@@ -2,6 +2,7 @@ package uk.chinnidiwakar.sliptrack
 
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import uk.chinnidiwakar.sliptrack.utils.normalizeTimestamp
 
 object StreakCalculator {
 
@@ -56,7 +57,4 @@ object StreakCalculator {
         return gaps.average().toInt()
     }
 
-    private fun normalizeTimestamp(raw: Long): Long {
-        return if (raw < 1_000_000_000_000L) raw * 1000 else raw
-    }
 }

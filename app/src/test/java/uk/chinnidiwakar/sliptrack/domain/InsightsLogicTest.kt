@@ -68,6 +68,30 @@ class InsightsLogicTest {
     }
 
     @Test
+    fun computeWeeklyReport_handlesSecondBasedTimestamps() {
+        val zone = ZoneId.systemDefault()
+        val slipMillis = LocalDateTime.now()
+            .minusDays(1)
+            .withHour(10)
+            .withMinute(0)
+            .withSecond(0)
+            .withNano(0)
+            .atZone(zone)
+            .toInstant()
+            .toEpochMilli()
+
+        val report = computeWeeklyReport(
+            listOf(
+                SlipEvent(timestamp = slipMillis / 1000, isResist = false),
+                SlipEvent(timestamp = slipMillis, isResist = true)
+            )
+        )
+
+        assertEquals(1, report.slipsThisWeek)
+        assertEquals(1, report.victoriesThisWeek)
+    }
+
+    @Test
     fun computeWeeklyReport_countsWeeklySlipsVictoriesAndCleanDays() {
         val report = computeWeeklyReport(
             listOf(

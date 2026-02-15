@@ -3,7 +3,6 @@ package uk.chinnidiwakar.sliptrack.utils
 import uk.chinnidiwakar.sliptrack.SlipEvent
 import uk.chinnidiwakar.sliptrack.ui.calendar.CalendarDay
 import uk.chinnidiwakar.sliptrack.ui.calendar.DaySummary
-import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
 

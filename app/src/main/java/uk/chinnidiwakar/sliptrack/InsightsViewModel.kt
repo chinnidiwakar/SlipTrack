@@ -39,8 +39,7 @@ class InsightsViewModel(context: Context) : ViewModel() {
     suspend fun importData(uri: Uri): Int {
         val json = DataBackupManager.readFromUri(appContext, uri)
         val events = DataBackupManager.parseJson(json)
-        dao.clearAll()
-        dao.insertAll(events)
+        dao.replaceAll(events)
         return events.size
     }
 
