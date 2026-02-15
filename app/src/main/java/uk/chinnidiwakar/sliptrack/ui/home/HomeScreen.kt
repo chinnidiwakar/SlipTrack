@@ -151,6 +151,10 @@ fun HomeScreen(navController: NavController) {
                 }
 
                 Spacer(Modifier.weight(1f))
+                if (shieldCharges > 0) {
+                    Text("🛡️ Shield charges: $shieldCharges", fontSize = 13.sp, color = Color(0xFFFFE082))
+                    Spacer(Modifier.height(8.dp))
+                }
                 Text("You're trying — that matters 🤍", fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f))
                 Spacer(Modifier.height(24.dp))
 
@@ -173,8 +177,7 @@ fun HomeScreen(navController: NavController) {
                                 fontSize = 11.sp,
                                 modifier = Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 2.dp)
                             )
-                        }
-                    }
+                  
                     Button(onClick = { showSlipDialog = true }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)), shape = RoundedCornerShape(20.dp)) {
                         Text("Slip", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }

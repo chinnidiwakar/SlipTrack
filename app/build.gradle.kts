@@ -93,4 +93,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
 
     wearApp(project(":wear"))
+    implementation("androidx.wear.tiles:tiles:1.3.0")
+    implementation("androidx.wear.tiles:tiles-material:1.3.0")
+    implementation("androidx.concurrent:concurrent-futures:1.2.0")
 }

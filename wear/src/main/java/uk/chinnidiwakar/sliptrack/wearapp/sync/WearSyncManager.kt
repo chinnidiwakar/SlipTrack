@@ -6,6 +6,7 @@ import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
@@ -24,6 +25,7 @@ class WearSyncManager(
 
     fun stop() {
         Wearable.getMessageClient(context).removeListener(this)
+        scope.cancel()
     }
 
     override fun onMessageReceived(event: com.google.android.gms.wearable.MessageEvent) {
