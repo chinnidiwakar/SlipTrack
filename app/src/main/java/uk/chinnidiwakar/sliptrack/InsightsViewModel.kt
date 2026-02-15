@@ -39,16 +39,14 @@ class InsightsViewModel(context: Context) : ViewModel() {
     suspend fun importData(uri: Uri): Int {
         val json = DataBackupManager.readFromUri(appContext, uri)
         val events = DataBackupManager.parseJson(json)
-        dao.clearAll()
-        dao.insertAll(events)
+        dao.replaceAll(events)
         return events.size
     }
 
     private fun observeInsights() {
         viewModelScope.launch {
             dao.observeAllEvents().collect { events ->
-                val slips = events.filter { !it.isResist }
-                _insights.value = computeInsights(slips)
+                _insights.value = computeInsights(events)
                 _weeklyReport.value = computeWeeklyReport(events)
             }
         }

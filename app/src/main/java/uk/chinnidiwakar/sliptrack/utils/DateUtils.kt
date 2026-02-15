@@ -3,7 +3,6 @@ package uk.chinnidiwakar.sliptrack.utils
 import uk.chinnidiwakar.sliptrack.SlipEvent
 import uk.chinnidiwakar.sliptrack.ui.calendar.CalendarDay
 import uk.chinnidiwakar.sliptrack.ui.calendar.DaySummary
-import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
 
@@ -27,9 +26,7 @@ fun buildDaySummaries(slips: List<SlipEvent>): List<DaySummary> {
     if (actualSlips.isEmpty()) return emptyList()
 
     val grouped = actualSlips.groupBy {
-        val date = Instant.ofEpochMilli(it.timestamp)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
+        val date = toLocalDate(it.timestamp)
         date
     }
 
@@ -56,9 +53,7 @@ fun buildCalendarDays(
 
     // Group EVERY event (Slips and Resists) by date
     val groupedByDate = slips.groupBy {
-        Instant.ofEpochMilli(it.timestamp)
-            .atZone(zone)
-            .toLocalDate()
+        toLocalDate(it.timestamp, zone)
     }
 
     return (1..daysInMonth).map { dayNum ->
@@ -72,3 +67,4 @@ fun buildCalendarDays(
         )
     }
 }
+

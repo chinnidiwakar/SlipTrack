@@ -4,16 +4,15 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import kotlinx.coroutines.flow.Flow   // 👈 add this
+import androidx.room.Transaction
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SlipDao {
 
-    // Used for the main streak (only counts actual slips)
     @Query("SELECT * FROM slips WHERE isResist = 0 ORDER BY timestamp DESC")
     fun observeSlipsOnly(): Flow<List<SlipEvent>>
 
-    // Used for your new "Victory" stats
     @Query("SELECT * FROM slips WHERE isResist = 1 ORDER BY timestamp DESC")
     fun observeResistsOnly(): Flow<List<SlipEvent>>
 
@@ -38,7 +37,6 @@ interface SlipDao {
     @Query("SELECT * FROM slips")
     suspend fun getAllSlipsUnordered(): List<SlipEvent>
 
-    // ✅ NEW: Reactive versions (add these)
     @Query("SELECT * FROM slips ORDER BY timestamp DESC")
     fun observeAllSlips(): Flow<List<SlipEvent>>
 
@@ -47,4 +45,10 @@ interface SlipDao {
 
     @Query("DELETE FROM slips")
     suspend fun clearAll()
+
+    @Transaction
+    suspend fun replaceAll(events: List<SlipEvent>) {
+        clearAll()
+        insertAll(events)
+    }
 }

@@ -1,9 +1,16 @@
 package uk.chinnidiwakar.sliptrack
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "slips")
+@Entity(
+    tableName = "slips",
+    indices = [
+        Index(value = ["timestamp"]),
+        Index(value = ["isResist", "timestamp"])
+    ]
+)
 data class SlipEvent(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,

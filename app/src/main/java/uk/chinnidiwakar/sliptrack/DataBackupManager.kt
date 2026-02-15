@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import org.json.JSONArray
 import org.json.JSONObject
+import uk.chinnidiwakar.sliptrack.utils.normalizeTimestamp
 
 object DataBackupManager {
 
@@ -29,20 +30,27 @@ object DataBackupManager {
     }
 
     fun parseJson(json: String): List<SlipEvent> {
-        val root = JSONObject(json)
-        val events = root.optJSONArray("events") ?: JSONArray()
+        val trimmed = json.trim()
+        val events = when {
+            trimmed.startsWith("[") -> JSONArray(trimmed)
+            else -> JSONObject(trimmed).optJSONArray("events") ?: JSONArray()
+        }
 
         return buildList {
             for (i in 0 until events.length()) {
                 val obj = events.optJSONObject(i) ?: continue
+
+                val rawTimestamp = obj.optLong("timestamp", 0L)
+                if (rawTimestamp <= 0L) continue
+
                 add(
                     SlipEvent(
                         id = obj.optInt("id", 0),
-                        timestamp = obj.optLong("timestamp"),
+                        timestamp = normalizeTimestamp(rawTimestamp),
                         isResist = obj.optBoolean("isResist", false),
-                        intensity = obj.optInt("intensity", 0),
-                        note = obj.optString("note").takeIf { it.isNotBlank() },
-                        trigger = obj.optString("trigger").takeIf { it.isNotBlank() }
+                        intensity = obj.optInt("intensity", 0).coerceIn(0, 3),
+                        note = obj.optNullableString("note")?.trim(),
+                        trigger = obj.optNullableString("trigger")?.trim()
                     )
                 )
             }
@@ -60,4 +68,9 @@ object DataBackupManager {
             reader.readText()
         } ?: error("Unable to open source file")
     }
+}
+
+private fun JSONObject.optNullableString(key: String): String? {
+    if (!has(key) || isNull(key)) return null
+    return optString(key).takeIf { it.isNotBlank() && it != "null" }
 }
