@@ -2,14 +2,18 @@ package uk.chinnidiwakar.sliptrack.ui.home
 
 import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +22,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
@@ -44,9 +51,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -59,6 +69,7 @@ import androidx.navigation.NavController
 import uk.chinnidiwakar.sliptrack.HomeViewModel
 import uk.chinnidiwakar.sliptrack.HomeViewModelFactory
 import uk.chinnidiwakar.sliptrack.SkyBackground
+
 
 @Composable
 fun HomeScreen(navController: NavController) {
@@ -80,9 +91,12 @@ fun HomeScreen(navController: NavController) {
     val currentStreak by viewModel.currentStreak.collectAsState()
     val longestStreak by viewModel.longestStreak.collectAsState()
     val quote by viewModel.dailyQuote.collectAsState()
+    val streakShields by viewModel.streakShields.collectAsState()
 
     var showVictoryDialog by remember { mutableStateOf(false) }
     var showSlipDialog by remember { mutableStateOf(false) }
+    var showShieldPrompt by remember { mutableStateOf(false) }
+    var pendingTrigger by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.uiMessages.collect { message ->
@@ -109,8 +123,36 @@ fun HomeScreen(navController: NavController) {
             actionLabel = "Slip",
             onDismiss = { showSlipDialog = false },
             onConfirm = { _, selectedTrigger ->
-                viewModel.logSlip(triggerLabel = selectedTrigger)
+                if (streakShields > 0) {
+                    pendingTrigger = selectedTrigger
+                    showShieldPrompt = true
+                } else {
+                    viewModel.logSlip(triggerLabel = selectedTrigger)
+                }
                 showSlipDialog = false
+            }
+        )
+    }
+
+
+    if (showShieldPrompt) {
+        AlertDialog(
+            onDismissRequest = { showShieldPrompt = false },
+            title = { Text("Use a streak shield?") },
+            text = { Text("You have $streakShields shield(s). Use one to protect your streak this time?") },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.logSlipWithShield(triggerLabel = pendingTrigger)
+                    showShieldPrompt = false
+                    pendingTrigger = null
+                }) { Text("Use Shield") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    viewModel.logSlip(triggerLabel = pendingTrigger)
+                    showShieldPrompt = false
+                    pendingTrigger = null
+                }) { Text("Log Slip") }
             }
         )
     }
@@ -127,7 +169,12 @@ fun HomeScreen(navController: NavController) {
             }
 
             Column(
-                modifier = Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 50.dp), // 👈 reserve dock space properly
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text("Good day 🌿", modifier = Modifier.padding(top = 16.dp), fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
@@ -162,9 +209,88 @@ fun HomeScreen(navController: NavController) {
                     Button(onClick = { showVictoryDialog = true }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), shape = RoundedCornerShape(20.dp)) {
                         Text("Resist 🛡️", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
-                    Button(onClick = { navController.navigate("emergency") }, modifier = Modifier.size(60.dp), shape = RoundedCornerShape(20.dp), contentPadding = PaddingValues(0.dp)) {
-                        Icon(Icons.Default.Shield, contentDescription = "SOS", tint = Color.White)
+                    val infiniteTransition = rememberInfiniteTransition(label = "sosPulse")
+
+                    val scale by infiniteTransition.animateFloat(
+                        initialValue = 1f,
+                        targetValue = 1.06f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1800, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "scaleAnim"
+                    )
+
+                    val glowAlpha by infiniteTransition.animateFloat(
+                        initialValue = 0.15f,
+                        targetValue = 0.35f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(1800, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "glowAnim"
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .size(76.dp)
+                            .graphicsLayer {
+                                scaleX = if (streakShields > 0) scale else 1f
+                                scaleY = if (streakShields > 0) scale else 1f
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+
+                        // Soft spiritual glow aura
+                        if (streakShields > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .size(76.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF8E2A2A).copy(alpha = glowAlpha))
+                                    .blur(16.dp)
+                            )
+                        }
+
+                        Surface(
+                            onClick = { navController.navigate("emergency") },
+                            shape = CircleShape,
+                            tonalElevation = 4.dp,
+                            shadowElevation = 8.dp,
+                            color = Color(0xFF7A1F1F), // deep calm crimson
+                            modifier = Modifier.size(64.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+
+                                // Soft background shield
+                                Icon(
+                                    imageVector = Icons.Default.Shield,
+                                    contentDescription = "SOS",
+                                    tint = Color.White.copy(alpha = 0.2f),
+                                    modifier = Modifier.size(40.dp)
+                                )
+
+                                // High contrast number
+                                if (streakShields > 0) {
+                                    Text(
+                                        text = streakShields.coerceAtMost(9).toString(),
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            shadow = Shadow(
+                                                color = Color.Black.copy(alpha = 0.4f),
+                                                offset = Offset(1f, 1f),
+                                                blurRadius = 8f
+                                            )
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
+
+
                     Button(onClick = { showSlipDialog = true }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)), shape = RoundedCornerShape(20.dp)) {
                         Text("Slip", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
@@ -291,4 +417,25 @@ fun TriggerDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
+}
+
+@Composable
+fun ShieldCountBadge(count: Int, modifier: Modifier = Modifier) {
+    if (count <= 0) return
+
+    Surface(
+        shape = CircleShape,
+        color = Color(0xFFFFD54F),
+        shadowElevation = 6.dp,
+        modifier = modifier.size(22.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = count.coerceAtMost(9).toString(),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+        }
+    }
 }

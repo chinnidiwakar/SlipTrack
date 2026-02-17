@@ -21,15 +21,17 @@ class StreakWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     private val dao = DatabaseProvider.get(applicationContext).slipDao()
+    private val preferenceManager = PreferenceManager(applicationContext)
 
     override suspend fun doWork(): Result {
         val lastSlip = dao.getLastActualSlip() ?: return Result.success()
         val streakDays = daysSince(lastSlip.timestamp)
 
-        val milestones = setOf(1, 3, 7, 14, 30, 60, 90)
-        if (streakDays in milestones) {
+        val milestones = setOf(1, 3, 7, 14, 30, 60, 90, 180, 365)
+        if (streakDays in milestones && preferenceManager.shouldNotifyMilestone(streakDays)) {
+            val shieldsAwarded = preferenceManager.rewardForMilestoneIfEligible(streakDays)
             createNotificationChannel()
-            postMilestoneNotification(streakDays)
+            postMilestoneNotification(streakDays, shieldsAwarded)
         }
 
         return Result.success()
@@ -56,18 +58,23 @@ class StreakWorker(
         notificationManager.createNotificationChannel(channel)
     }
 
-    private fun postMilestoneNotification(streakDays: Int) {
-        val message = when (streakDays) {
+    private fun postMilestoneNotification(streakDays: Int, shieldsAwarded: Int) {
+        val baseMessage = when (streakDays) {
             1 -> "Day 1 complete. Keep going 🌱"
             3 -> "3-day streak! Solid momentum ⚡"
-            7 -> "One full week! Proud of you 🏆"
             else -> "$streakDays-day streak. Keep building 💪"
+        }
+
+        val rewardSuffix = if (shieldsAwarded > 0) {
+            " You earned $shieldsAwarded shield${if (shieldsAwarded > 1) "s" else ""} 🛡️"
+        } else {
+            ""
         }
 
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Milestone unlocked")
-            .setContentText(message)
+            .setContentText(baseMessage + rewardSuffix)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .build()
