@@ -1,7 +1,10 @@
 package uk.chinnidiwakar.sliptrack.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -25,6 +28,15 @@ private val LightColors = lightColorScheme(
     primary = Accent,
     onBackground = LightText,
     onSurface = LightText
+)
+
+private val AmoledColorScheme = darkColorScheme(
+    background = Color.Black,
+    surface = Color.Black,
+    primary = Color(0xFF4CAF50),
+    onPrimary = Color.White,
+    onBackground = Color.White,
+    onSurface = Color.White
 )
 
 private val DarkColors = darkColorScheme(

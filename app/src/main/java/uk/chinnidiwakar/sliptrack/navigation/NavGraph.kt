@@ -142,6 +142,8 @@ fun BottomNavigationBar(navController: NavController) {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
+    if (currentRoute == Screen.Emergency.route) return
+
     Box(
         modifier = Modifier
             .fillMaxSize(),   // 👈 THIS was missing

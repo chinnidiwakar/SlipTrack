@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import uk.chinnidiwakar.sliptrack.HapticEngine
 import uk.chinnidiwakar.sliptrack.HomeViewModel
 import uk.chinnidiwakar.sliptrack.HomeViewModelFactory
 import uk.chinnidiwakar.sliptrack.SkyBackground
@@ -74,6 +75,7 @@ import uk.chinnidiwakar.sliptrack.SkyBackground
 @Composable
 fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
+
 
     // 1. Get the tools needed for the Factory
     val database = remember { uk.chinnidiwakar.sliptrack.DatabaseProvider.get(context) }
@@ -92,7 +94,7 @@ fun HomeScreen(navController: NavController) {
     val longestStreak by viewModel.longestStreak.collectAsState()
     val quote by viewModel.dailyQuote.collectAsState()
     val streakShields by viewModel.streakShields.collectAsState()
-
+    val engine = remember { HapticEngine(context) }
     var showVictoryDialog by remember { mutableStateOf(false) }
     var showSlipDialog by remember { mutableStateOf(false) }
     var showShieldPrompt by remember { mutableStateOf(false) }
@@ -199,6 +201,7 @@ fun HomeScreen(navController: NavController) {
                 Spacer(Modifier.weight(1f))
                 Text("You're trying — that matters 🤍", fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f))
                 Spacer(Modifier.height(24.dp))
+                val infiniteTransition = rememberInfiniteTransition(label = "sosPulse")
 
                 // --- THE TRIO BUTTONS ---
                 Row(
@@ -206,10 +209,12 @@ fun HomeScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Button(onClick = { showVictoryDialog = true }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), shape = RoundedCornerShape(20.dp)) {
+                    Button(onClick = {
+                        engine.victory()
+                        showVictoryDialog = true
+                    }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), shape = RoundedCornerShape(20.dp)) {
                         Text("Resist 🛡️", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
-                    val infiniteTransition = rememberInfiniteTransition(label = "sosPulse")
 
                     val scale by infiniteTransition.animateFloat(
                         initialValue = 1f,
@@ -290,8 +295,10 @@ fun HomeScreen(navController: NavController) {
                         }
                     }
 
-
-                    Button(onClick = { showSlipDialog = true }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)), shape = RoundedCornerShape(20.dp)) {
+                    Button(onClick = {
+                        engine.victory()
+                        showSlipDialog = true
+                    }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)), shape = RoundedCornerShape(20.dp)) {
                         Text("Slip", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }

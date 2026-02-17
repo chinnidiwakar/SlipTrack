@@ -20,8 +20,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -31,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -42,18 +45,70 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import uk.chinnidiwakar.sliptrack.HapticEngine
+
 
 @Composable
 fun EmergencyScreen(onClose: () -> Unit) {
     var selectedMode by remember { mutableStateOf("Wave") }
     var step by remember { mutableIntStateOf(0) }
-    val haptic = LocalHapticFeedback.current
+    var isBreathingRunning by remember { mutableStateOf(false) }
+    var breathingPhase by remember { mutableStateOf("Ready") }
+    val breathingScale = remember { androidx.compose.animation.core.Animatable(0.6f) }
+    val context = LocalContext.current
+    val engine = remember { HapticEngine(context) }
+
+    LaunchedEffect(Unit) {
+        engine.emergencyGround()
+    }
+
+
+    LaunchedEffect(selectedMode) {
+        if (selectedMode != "Breathe") {
+            isBreathingRunning = false
+            breathingPhase = "Ready"
+            breathingScale.snapTo(0.6f) // ✅ now inside coroutine
+        }
+    }
+
+    LaunchedEffect(isBreathingRunning) {
+
+        if (!isBreathingRunning) {
+            engine.cancel()
+            return@LaunchedEffect
+        }
+
+        while (isBreathingRunning) {
+
+            breathingPhase = "Inhale"
+            engine.waveform(
+                longArrayOf(0, 20, 40, 20, 40, 20),
+                intArrayOf(0, 80, 0, 140, 0, 200)
+            )
+            breathingScale.animateTo(1f, tween(4000))
+
+            breathingPhase = "Hold"
+            engine.pulse(30, 90)
+            kotlinx.coroutines.delay(4000)
+
+            breathingPhase = "Exhale"
+            engine.waveform(
+                longArrayOf(0, 40, 40, 40),
+                intArrayOf(0, 160, 0, 120)
+            )
+            breathingScale.animateTo(0.6f, tween(6000))
+
+            breathingPhase = "Hold"
+            engine.pulse(20, 70)
+            kotlinx.coroutines.delay(2000)
+        }
+    }
+
 
     val steps = listOf(
         "Take a deep breath. This feeling is just a chemical signal. It will pass.",
@@ -70,10 +125,13 @@ fun EmergencyScreen(onClose: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .statusBarsPadding()
-                .padding(24.dp),
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 110.dp), // 👈 reserve space for floating dock
             horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        )
+        {
             Text(
                 "Urge Emergency",
                 style = MaterialTheme.typography.headlineSmall.copy(
@@ -105,7 +163,8 @@ fun EmergencyScreen(onClose: () -> Unit) {
                             .background(if (isSelected) Color.White.withAlpha(0.15f) else Color.Transparent)
                             .clickable {
                                 selectedMode = mode
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                if (mode != "Breathe") isBreathingRunning = false
+                                breathingPhase = "Ready"
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -128,8 +187,31 @@ fun EmergencyScreen(onClose: () -> Unit) {
                     .border(0.5.dp, Color.White.withAlpha(0.1f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                if (selectedMode == "Wave") UrgeWaveVisualizer() else BoxBreathingVisualizer()
+                if (selectedMode == "Wave") {
+                    UrgeWaveVisualizer()
+                } else {
+                    BoxBreathingVisualizer(
+                        phase = breathingPhase,
+                        scale = breathingScale.value
+                    )
+                }
+
             }
+
+            if (selectedMode == "Breathe") {
+                Spacer(Modifier.height(24.dp))
+
+                Button(
+                    onClick = { isBreathingRunning = !isBreathingRunning },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(if (isBreathingRunning) "Stop" else "Start")
+                }
+            }
+
 
             Spacer(Modifier.weight(0.5f))
 
@@ -141,6 +223,7 @@ fun EmergencyScreen(onClose: () -> Unit) {
                 colors = CardDefaults.cardColors(containerColor = Color.White.withAlpha(0.07f)),
                 shape = RoundedCornerShape(20.dp)
             ) {
+
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -167,7 +250,7 @@ fun EmergencyScreen(onClose: () -> Unit) {
             Button(
                 onClick = {
                     if (step < steps.lastIndex) step++ else step = 0
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    engine.cancel()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -182,7 +265,15 @@ fun EmergencyScreen(onClose: () -> Unit) {
                 )
             }
 
-            TextButton(onClick = onClose, modifier = Modifier.padding(top = 12.dp)) {
+            TextButton(
+                onClick = {
+                    isBreathingRunning = false
+                    engine.cancel()
+                    onClose()
+                },
+                modifier = Modifier.padding(top = 12.dp)
+            )
+            {
                 Text("I am calm now", color = Color.White.copy(alpha = 0.4f))
             }
         }
@@ -238,43 +329,37 @@ fun UrgeWaveVisualizer() {
 }
 
 @Composable
-fun BoxBreathingVisualizer() {
-    val transition = rememberInfiniteTransition(label = "BreatheTransition")
+fun BoxBreathingVisualizer(
+    phase: String,
+    scale: Float
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
-    // This creates a 4-part cycle (In, Hold, Out, Hold)
-    val progress by transition.animateFloat(
-        initialValue = 0f, targetValue = 4f,
-        animationSpec = infiniteRepeatable(tween(16000, easing = LinearEasing))
-    )
+        Box(contentAlignment = Alignment.Center) {
 
-    val (text, scale) = when {
-        progress < 1f -> "Inhale" to 0.6f + (progress * 0.4f)      // Growing
-        progress < 2f -> "Hold" to 1.0f                            // Full
-        progress < 3f -> "Exhale" to 1.0f - ((progress - 2f) * 0.4f) // Shrinking
-        else -> "Hold" to 0.6f                                     // Empty
-    }
+            Surface(
+                modifier = Modifier.size(240.dp * scale),
+                shape = CircleShape,
+                color = Color(0xFF81C784).copy(alpha = 0.1f)
+            ) {}
 
-    Box(contentAlignment = Alignment.Center) {
-        // Pulse Effect
-        Surface(
-            modifier = Modifier.size(240.dp * scale),
-            shape = CircleShape,
-            color = Color(0xFF81C784).copy(alpha = 0.1f)
-        ) {}
-
-        Surface(
-            modifier = Modifier.size(160.dp * scale),
-            shape = CircleShape,
-            color = if (text == "Hold") Color(0xFFFFB74D) else Color(0xFF81C784),
-            shadowElevation = 8.dp
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
+            Surface(
+                modifier = Modifier.size(160.dp * scale),
+                shape = CircleShape,
+                color = if (phase == "Hold")
+                    Color(0xFFFFB74D)
+                else
+                    Color(0xFF81C784),
+                shadowElevation = 8.dp
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = phase,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
             }
         }
     }
