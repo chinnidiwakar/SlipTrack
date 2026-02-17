@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,7 +34,7 @@ import uk.chinnidiwakar.sliptrack.InsightsViewModel
 import uk.chinnidiwakar.sliptrack.InsightsViewModelFactory
 
 @Composable
-fun InsightsScreen() {
+fun InsightsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val viewModel: InsightsViewModel = viewModel(factory = InsightsViewModelFactory(context))
 
@@ -49,13 +50,15 @@ fun InsightsScreen() {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+
             Spacer(Modifier.height(8.dp))
 
             Text(
                 "Insights",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.5.sp
+                letterSpacing = 0.5.sp,
+                textAlign = TextAlign.Center
             )
 
             // --- Weekly Summary Glass Card ---

@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,18 +21,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,6 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import uk.chinnidiwakar.sliptrack.HapticEngine
+import uk.chinnidiwakar.sliptrack.ui.settings.SettingsSection
 
 
 @Composable
@@ -66,6 +70,7 @@ fun EmergencyScreen(onClose: () -> Unit) {
     LaunchedEffect(Unit) {
         engine.emergencyGround()
     }
+
 
 
     LaunchedEffect(selectedMode) {
@@ -118,165 +123,207 @@ fun EmergencyScreen(onClose: () -> Unit) {
         "Connect with your 'Future Self'. Visualize the peace of tomorrow morning if you stay strong now."
     )
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color(0xFF080808) // Slightly lifted black for better contrast
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 110.dp), // 👈 reserve space for floating dock
-            horizontalAlignment = Alignment.CenterHorizontally
+    Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF080808)) { Column(modifier = Modifier.fillMaxSize()) {
+        EmergencyHeader(
+            selectedMode = selectedMode,
+            onModeChange = {
+                selectedMode = it
+                if (it != "Breathe") isBreathingRunning = false },
+            onBack = {
+                isBreathingRunning = false
+                engine.cancel()
+                onClose()
+            }
         )
-        {
-            Text(
-                "Urge Emergency",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.5.sp
-                ),
-                color = Color.White
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            // GLASSMORPHIC TOGGLE
-            Row(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .clip(RoundedCornerShape(26.dp))
-                    .background(Color.White.withAlpha(0.05f)) // Low alpha base
-                    .border(1.dp, Color.White.withAlpha(0.1f), RoundedCornerShape(26.dp))
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 120.dp), // Room for Bottom Nav
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                listOf("Wave", "Breathe").forEach { mode ->
-                    val isSelected = selectedMode == mode
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .padding(4.dp)
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(if (isSelected) Color.White.withAlpha(0.15f) else Color.Transparent)
-                            .clickable {
-                                selectedMode = mode
-                                if (mode != "Breathe") isBreathingRunning = false
-                                breathingPhase = "Ready"
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
+                Spacer(Modifier.height(48.dp)) // Proper breathing room
+
+                // VISUALIZER
+                Box(
+                    modifier = Modifier
+                        .size(280.dp)
+                        .background(Color.White.copy(alpha = 0.03f), CircleShape)
+                        .border(0.5.dp, Color.White.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (selectedMode == "Wave") UrgeWaveVisualizer()
+                    else BoxBreathingVisualizer(phase = breathingPhase, scale = breathingScale.value)
+                }
+
+                Spacer(Modifier.height(56.dp)) // Increased gap to prevent touching
+
+                // ACTION BUTTON (Polished)
+                BreathingActionButton(
+                    isRunning = isBreathingRunning,
+                    onClick = { isBreathingRunning = !isBreathingRunning }
+                )
+
+                Spacer(Modifier.height(32.dp))
+
+                // PROTOCOL CARD (Matches SettingsSection style)
+                SettingsSection(title = "Step ${step + 1}") {
+                    Column(modifier = Modifier.padding(20.dp)) {
                         Text(
-                            text = mode,
-                            color = if (isSelected) Color.White else Color.White.withAlpha(0.4f),
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            text = steps[step],
+                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                            color = Color.White.copy(alpha = 0.9f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
+                        Spacer(Modifier.height(24.dp))
+                        Button(
+                            onClick = { if (step < steps.lastIndex) step++ else step = 0 },
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text("NEXT STEP", fontWeight = FontWeight.Bold, color = Color.Black)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EmergencyModeSelector(selectedMode: String, onModeChange: (String) -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White.copy(alpha = 0.05f),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+    ) {
+        Row(modifier = Modifier.padding(4.dp)) {
+            listOf("Wave", "Breathe").forEach { mode ->
+                val isSelected = selectedMode == mode
+                Surface(
+                    onClick = { onModeChange(mode) },
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    modifier = Modifier.width(120.dp)
+                ) {
+                    Text(
+                        mode,
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        textAlign = TextAlign.Center,
+                        color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.6f),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BreathingActionButton(isRunning: Boolean, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(24.dp),
+        color = if (isRunning) Color(0xFFE53935).copy(alpha = 0.2f) else Color(0xFF00897B).copy(alpha = 0.2f),
+        border = BorderStroke(1.dp, if (isRunning) Color(0xFFE53935) else Color(0xFF00897B)),
+        modifier = Modifier.fillMaxWidth().height(64.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                if (isRunning) "STOP SESSION" else "BEGIN BREATHING",
+                color = if (isRunning) Color(0xFFFF8A80) else Color(0xFF80CBC4),
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 1.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun EmergencyHeader(
+    selectedMode: String,
+    onModeChange: (String) -> Unit,
+    onBack: () -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Modern Back Button using ripple()
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape) // Ensures the ripple is circular
+                    .clickable(
+                        onClick = onBack,
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = androidx.compose.material3.ripple(bounded = false) // NEW API
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(Modifier.width(4.dp))
+
+            // The Mode Pill
+            Surface(
+                shape = CircleShape,
+                color = Color.White.copy(alpha = 0.05f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(44.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    listOf("Wave", "Breathe").forEach { mode ->
+                        val isSelected = selectedMode == mode
+
+                        Surface(
+                            onClick = { onModeChange(mode) },
+                            shape = CircleShape,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = mode,
+                                    color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.5f),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            Spacer(Modifier.weight(0.5f))
-
-            // FROSTED VISUALIZER CONTAINER
-            Box(
-                modifier = Modifier
-                    .size(280.dp)
-                    .background(Color.White.withAlpha(0.03f), CircleShape)
-                    .border(0.5.dp, Color.White.withAlpha(0.1f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                if (selectedMode == "Wave") {
-                    UrgeWaveVisualizer()
-                } else {
-                    BoxBreathingVisualizer(
-                        phase = breathingPhase,
-                        scale = breathingScale.value
-                    )
-                }
-
-            }
-
-            if (selectedMode == "Breathe") {
-                Spacer(Modifier.height(24.dp))
-
-                Button(
-                    onClick = { isBreathingRunning = !isBreathingRunning },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(if (isBreathingRunning) "Stop" else "Start")
-                }
-            }
-
-
-            Spacer(Modifier.weight(0.5f))
-
-            // GLASS STEP CARD
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, Color.White.withAlpha(0.1f), RoundedCornerShape(20.dp)),
-                colors = CardDefaults.cardColors(containerColor = Color.White.withAlpha(0.07f)),
-                shape = RoundedCornerShape(20.dp)
-            ) {
-
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        "Step ${step + 1} of ${steps.size}".uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        letterSpacing = 2.sp
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = steps[step],
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
-                        color = Color.White
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            // NEON-EDGED BUTTON
-            Button(
-                onClick = {
-                    if (step < steps.lastIndex) step++ else step = 0
-                    engine.cancel()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text(
-                    if (step < steps.lastIndex) "Next Step" else "Restart Protocol",
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-            }
-
-            TextButton(
-                onClick = {
-                    isBreathingRunning = false
-                    engine.cancel()
-                    onClose()
-                },
-                modifier = Modifier.padding(top = 12.dp)
-            )
-            {
-                Text("I am calm now", color = Color.White.copy(alpha = 0.4f))
-            }
+            // Balancing spacer to keep the pill centered
+            Spacer(Modifier.width(48.dp))
         }
+
+        HorizontalDivider(
+            modifier = Modifier.fillMaxWidth(),
+            thickness = 1.dp,
+            color = Color.White.copy(alpha = 0.05f)
+        )
     }
 }
 
