@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -34,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -80,9 +83,12 @@ fun HomeScreen(navController: NavController) {
     val currentStreak by viewModel.currentStreak.collectAsState()
     val longestStreak by viewModel.longestStreak.collectAsState()
     val quote by viewModel.dailyQuote.collectAsState()
+    val streakShields by viewModel.streakShields.collectAsState()
 
     var showVictoryDialog by remember { mutableStateOf(false) }
     var showSlipDialog by remember { mutableStateOf(false) }
+    var showShieldPrompt by remember { mutableStateOf(false) }
+    var pendingTrigger by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.uiMessages.collect { message ->
@@ -109,8 +115,36 @@ fun HomeScreen(navController: NavController) {
             actionLabel = "Slip",
             onDismiss = { showSlipDialog = false },
             onConfirm = { _, selectedTrigger ->
-                viewModel.logSlip(triggerLabel = selectedTrigger)
+                if (streakShields > 0) {
+                    pendingTrigger = selectedTrigger
+                    showShieldPrompt = true
+                } else {
+                    viewModel.logSlip(triggerLabel = selectedTrigger)
+                }
                 showSlipDialog = false
+            }
+        )
+    }
+
+
+    if (showShieldPrompt) {
+        AlertDialog(
+            onDismissRequest = { showShieldPrompt = false },
+            title = { Text("Use a streak shield?") },
+            text = { Text("You have $streakShields shield(s). Use one to protect your streak this time?") },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.logSlipWithShield(triggerLabel = pendingTrigger)
+                    showShieldPrompt = false
+                    pendingTrigger = null
+                }) { Text("Use Shield") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    viewModel.logSlip(triggerLabel = pendingTrigger)
+                    showShieldPrompt = false
+                    pendingTrigger = null
+                }) { Text("Log Slip") }
             }
         )
     }
@@ -162,8 +196,11 @@ fun HomeScreen(navController: NavController) {
                     Button(onClick = { showVictoryDialog = true }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), shape = RoundedCornerShape(20.dp)) {
                         Text("Resist 🛡️", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
-                    Button(onClick = { navController.navigate("emergency") }, modifier = Modifier.size(60.dp), shape = RoundedCornerShape(20.dp), contentPadding = PaddingValues(0.dp)) {
-                        Icon(Icons.Default.Shield, contentDescription = "SOS", tint = Color.White)
+                    Box(contentAlignment = Alignment.TopEnd) {
+                        Button(onClick = { navController.navigate("emergency") }, modifier = Modifier.size(60.dp), shape = RoundedCornerShape(20.dp), contentPadding = PaddingValues(0.dp)) {
+                            Icon(Icons.Default.Shield, contentDescription = "SOS", tint = Color.White)
+                        }
+                        ShieldCountBadge(count = streakShields, modifier = Modifier.padding(top = 2.dp, end = 2.dp))
                     }
                     Button(onClick = { showSlipDialog = true }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)), shape = RoundedCornerShape(20.dp)) {
                         Text("Slip", fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -291,4 +328,24 @@ fun TriggerDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
+}
+
+@Composable
+fun ShieldCountBadge(count: Int, modifier: Modifier = Modifier) {
+    if (count <= 0) return
+
+    Box(
+        modifier = modifier
+            .size(18.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = count.coerceAtMost(9).toString(),
+            fontSize = 10.sp,
+            color = Color.Black,
+            fontWeight = FontWeight.Bold
+        )
+    }
 }

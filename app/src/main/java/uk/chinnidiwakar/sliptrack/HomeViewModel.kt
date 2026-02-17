@@ -52,6 +52,13 @@ class HomeViewModel(
     private val _uiMessages = MutableSharedFlow<String>()
     val uiMessages: SharedFlow<String> = _uiMessages.asSharedFlow()
 
+    val streakShields: StateFlow<Int> = preferenceManager.streakShields
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 1
+        )
+
     private var lastRelapseTime = System.currentTimeMillis()
 
     init {
@@ -124,15 +131,39 @@ class HomeViewModel(
 
     fun logSlip(triggerLabel: String? = null) {
         viewModelScope.launch {
-            dao.insertSlip(
-                SlipEvent(
-                    timestamp = System.currentTimeMillis(),
-                    isResist = false,
-                    trigger = triggerLabel
-                )
-            )
-            _uiMessages.emit("Slip logged. Restarting with awareness 💛")
+            logSlipInternal(triggerLabel)
         }
+    }
+
+    fun logSlipWithShield(triggerLabel: String? = null) {
+        viewModelScope.launch {
+            val consumed = preferenceManager.consumeShield()
+            if (consumed) {
+                dao.insertSlip(
+                    SlipEvent(
+                        timestamp = System.currentTimeMillis(),
+                        isResist = true,
+                        intensity = 3,
+                        trigger = triggerLabel,
+                        note = "shield_saved"
+                    )
+                )
+                _uiMessages.emit("🛡️ Shield used. Streak protected.")
+            } else {
+                logSlipInternal(triggerLabel)
+            }
+        }
+    }
+
+    private suspend fun logSlipInternal(triggerLabel: String?) {
+        dao.insertSlip(
+            SlipEvent(
+                timestamp = System.currentTimeMillis(),
+                isResist = false,
+                trigger = triggerLabel
+            )
+        )
+        _uiMessages.emit("Slip logged. Restarting with awareness 💛")
     }
 
     fun logEvent(
@@ -153,13 +184,15 @@ class HomeViewModel(
             )
 
             if (isResist) {
+                val earnedShields = preferenceManager.rewardForResistIfEligible()
                 val msg = when (safeIntensity) {
                     1 -> "🌱 Spark extinguished! Good catch."
                     2 -> "⚔️ Stayed strong through the urge!"
                     3 -> "🏆 MASSIVE VICTORY! You conquered the pit."
                     else -> "Victory logged!"
                 }
-                _uiMessages.emit(msg)
+                val rewardMsg = if (earnedShields > 0) " +$earnedShields shield earned 🛡️" else ""
+                _uiMessages.emit(msg + rewardMsg)
             }
         }
     }
