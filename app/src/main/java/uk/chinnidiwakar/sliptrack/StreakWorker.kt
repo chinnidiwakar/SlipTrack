@@ -21,6 +21,7 @@ class StreakWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     private val dao = DatabaseProvider.get(applicationContext).slipDao()
+    private val preferenceManager = PreferenceManager(applicationContext)
 
     override suspend fun doWork(): Result {
         val lastSlip = dao.getLastActualSlip() ?: return Result.success()
@@ -28,6 +29,9 @@ class StreakWorker(
 
         val milestones = setOf(1, 3, 7, 14, 30, 60, 90)
         if (streakDays in milestones) {
+            if (streakDays >= 7) {
+                preferenceManager.awardShield()
+            }
             createNotificationChannel()
             postMilestoneNotification(streakDays)
         }
@@ -60,7 +64,9 @@ class StreakWorker(
         val message = when (streakDays) {
             1 -> "Day 1 complete. Keep going 🌱"
             3 -> "3-day streak! Solid momentum ⚡"
-            7 -> "One full week! Proud of you 🏆"
+            7 -> "One full week! You earned a streak shield 🛡️"
+            14 -> "2 weeks strong! Bonus shield unlocked 🛡️"
+            30 -> "30-day legend. Another shield added ✨"
             else -> "$streakDays-day streak. Keep building 💪"
         }
 

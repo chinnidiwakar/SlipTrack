@@ -52,6 +52,13 @@ class HomeViewModel(
     private val _uiMessages = MutableSharedFlow<String>()
     val uiMessages: SharedFlow<String> = _uiMessages.asSharedFlow()
 
+    val streakShields: StateFlow<Int> = preferenceManager.streakShields
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 1
+        )
+
     private var lastRelapseTime = System.currentTimeMillis()
 
     init {
@@ -132,6 +139,26 @@ class HomeViewModel(
                 )
             )
             _uiMessages.emit("Slip logged. Restarting with awareness 💛")
+        }
+    }
+
+    fun logSlipWithShield(triggerLabel: String? = null) {
+        viewModelScope.launch {
+            val consumed = preferenceManager.consumeShield()
+            if (consumed) {
+                dao.insertSlip(
+                    SlipEvent(
+                        timestamp = System.currentTimeMillis(),
+                        isResist = true,
+                        intensity = 3,
+                        trigger = triggerLabel,
+                        note = "shield_saved"
+                    )
+                )
+                _uiMessages.emit("🛡️ Shield used. Streak protected.")
+            } else {
+                logSlip(triggerLabel)
+            }
         }
     }
 

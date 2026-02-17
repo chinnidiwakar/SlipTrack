@@ -2,6 +2,7 @@ package uk.chinnidiwakar.sliptrack
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +16,7 @@ class PreferenceManager(context: Context) {
     companion object {
         val JOURNEY_NAME = stringPreferencesKey("journey_name")
         val THEME_MODE = stringPreferencesKey("theme_mode") // Key for Amoled vs Material
+        val STREAK_SHIELDS = intPreferencesKey("streak_shields")
     }
 
     // --- Journey Name ---
@@ -36,6 +38,30 @@ class PreferenceManager(context: Context) {
     suspend fun saveThemeMode(mode: String) {
         dataStore.edit { prefs ->
             prefs[THEME_MODE] = mode
+        }
+    }
+
+    val streakShields: Flow<Int> = dataStore.data.map { prefs ->
+        prefs[STREAK_SHIELDS] ?: 1
+    }
+
+    suspend fun consumeShield(): Boolean {
+        var consumed = false
+        dataStore.edit { prefs ->
+            val current = prefs[STREAK_SHIELDS] ?: 1
+            if (current > 0) {
+                prefs[STREAK_SHIELDS] = current - 1
+                consumed = true
+            }
+        }
+        return consumed
+    }
+
+    suspend fun awardShield(count: Int = 1) {
+        if (count <= 0) return
+        dataStore.edit { prefs ->
+            val current = prefs[STREAK_SHIELDS] ?: 1
+            prefs[STREAK_SHIELDS] = current + count
         }
     }
 }
