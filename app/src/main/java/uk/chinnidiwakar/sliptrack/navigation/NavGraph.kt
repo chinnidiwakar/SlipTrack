@@ -2,24 +2,37 @@ package uk.chinnidiwakar.sliptrack.navigation
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -69,118 +82,179 @@ fun AppNavigation() {
 
     Scaffold(
         containerColor = Color.Transparent,
-        bottomBar = { BottomNavigationBar(navController) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Home.route,
-            modifier = Modifier.padding(paddingValues)
-        ) {
-            composable(Screen.Home.route) { HomeScreen(navController = navController) }
-            composable(Screen.Calendar.route) { CalendarScreen() }
-            composable(Screen.Insights.route) { InsightsScreen() }
-            composable(Screen.Emergency.route) { EmergencyScreen(onClose = { navController.popBackStack() }) }
-            composable(Screen.Settings.route) {
-                // 'context' is already defined at the top of AppNavigation,
-                // so we don't need to re-declare it here unless you want a local one.
-                val scope = rememberCoroutineScope()
 
-                val insightsViewModel: InsightsViewModel = viewModel(
-                    factory = InsightsViewModelFactory(context)
-                )
+        Box(modifier = Modifier.fillMaxSize()) {
 
-                val exportLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.CreateDocument("application/json")
-                ) { uri ->
-                    if (uri != null) {
-                        scope.launch { insightsViewModel.exportData(uri) }
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Home.route,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                composable(Screen.Home.route) { HomeScreen(navController = navController) }
+                composable(Screen.Calendar.route) { CalendarScreen() }
+                composable(Screen.Insights.route) { InsightsScreen() }
+                composable(Screen.Emergency.route) { EmergencyScreen(onClose = { navController.popBackStack() }) }
+                composable(Screen.Settings.route) {
+                    val scope = rememberCoroutineScope()
+
+                    val insightsViewModel: InsightsViewModel = viewModel(
+                        factory = InsightsViewModelFactory(context)
+                    )
+
+                    val exportLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.CreateDocument("application/json")
+                    ) { uri ->
+                        if (uri != null) {
+                            scope.launch { insightsViewModel.exportData(uri) }
+                        }
                     }
-                }
 
-                val importLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.OpenDocument()
-                ) { uri ->
-                    if (uri != null) {
-                        scope.launch { insightsViewModel.importData(uri) }
+                    val importLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.OpenDocument()
+                    ) { uri ->
+                        if (uri != null) {
+                            scope.launch { insightsViewModel.importData(uri) }
+                        }
                     }
-                }
 
-                SettingsScreen(
-                    viewModel = homeViewModel, // Matches the variable at the top now!
-                    onExport = { exportLauncher.launch("sliptrack-backup.json") },
-                    onImport = { importLauncher.launch(arrayOf("application/json")) },
-                    onNavigateBack = { navController.popBackStack() }
-                )
+                    SettingsScreen(
+                        viewModel = homeViewModel,
+                        onExport = { exportLauncher.launch("sliptrack-backup.json") },
+                        onImport = { importLauncher.launch(arrayOf("application/json")) },
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
             }
+
+            // 👇 Overlay bottom nav manually
+            BottomNavigationBar(navController)
         }
     }
 }
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
+
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 6.dp) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),   // 👈 THIS was missing
+        contentAlignment = Alignment.BottomCenter
+    ) {
 
-        NavigationBarItem(
-            selected = currentRoute == Screen.Home.route ||
-                    currentRoute == Screen.Emergency.route ||
-                    currentRoute == Screen.Settings.route,
-            onClick = {
-                // 1. If we are on a completely different tab (History/Calendar/Insights)
-                if (currentRoute != Screen.Home.route &&
-                    currentRoute != Screen.Emergency.route &&
-                    currentRoute != Screen.Settings.route) {
+        Box(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(bottom = 12.dp)
+                .height(62.dp)
+                .fillMaxWidth(0.85f)
+                .clip(RoundedCornerShape(32.dp))
+                .background(Color.Black.copy(alpha = 0.35f))
+        ) {
 
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(navController.graph.startDestinationId) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                } else {
-                    // 2. If we are ALREADY in the Home "territory" (Home, SOS, or Settings)
-                    // This force-clears everything back to the actual Home Screen
-                    navController.popBackStack(Screen.Home.route, inclusive = false)
-                }
-            },
-            label = { Text("Home") },
-            icon = { Icon(Icons.Default.Home, null) }
-        )
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 28.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
 
-        NavigationBarItem(
-            selected = currentRoute == Screen.Calendar.route,
-            onClick = {
-                if (currentRoute != Screen.Calendar.route) { // 👈 Prevents reloading if already there
-                    navController.navigate(Screen.Calendar.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+                FrostedNavItem(
+                    selected = currentRoute == Screen.Home.route ||
+                            currentRoute == Screen.Emergency.route ||
+                            currentRoute == Screen.Settings.route,
+                    icon = Icons.Default.Home
+                ) {
+                    if (currentRoute != Screen.Home.route &&
+                        currentRoute != Screen.Emergency.route &&
+                        currentRoute != Screen.Settings.route) {
+
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
+                    } else {
+                        navController.popBackStack(Screen.Home.route, inclusive = false)
                     }
                 }
-            },
-            label = { Text("Calendar") },
-            icon = { Icon(Icons.Default.DateRange, null) }
-        )
 
-        NavigationBarItem(
-            selected = currentRoute == Screen.Insights.route,
-            onClick = {
-                if (currentRoute != Screen.Insights.route) { // 👈 Prevents reloading if already there
-                    navController.navigate(Screen.Insights.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+                FrostedNavItem(
+                    selected = currentRoute == Screen.Calendar.route,
+                    icon = Icons.Default.DateRange
+                ) {
+                    if (currentRoute != Screen.Calendar.route) {
+                        navController.navigate(Screen.Calendar.route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 }
-            },
-            label = { Text("Insights") },
-            icon = { Icon(Icons.Default.Analytics, null) }
+
+                FrostedNavItem(
+                    selected = currentRoute == Screen.Insights.route,
+                    icon = Icons.Default.Analytics
+                ) {
+                    if (currentRoute != Screen.Insights.route) {
+                        navController.navigate(Screen.Insights.route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun FrostedNavItem(
+    selected: Boolean,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit
+) {
+
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.12f else 1f,
+        animationSpec = tween(250),
+        label = "navScale"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(42.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clip(CircleShape)
+            .background(
+                if (selected)
+                    Color.White.copy(alpha = 0.15f)
+                else
+                    Color.Transparent
+            )
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (selected)
+                Color.White
+            else
+                Color.White.copy(alpha = 0.6f),
+            modifier = Modifier.size(22.dp)
         )
     }
 }
