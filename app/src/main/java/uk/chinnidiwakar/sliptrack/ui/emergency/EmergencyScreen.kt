@@ -1,5 +1,6 @@
 package uk.chinnidiwakar.sliptrack.ui.emergency
 
+import android.content.res.Configuration
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -12,11 +13,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -48,6 +49,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,6 +68,8 @@ fun EmergencyScreen(onClose: () -> Unit) {
     val breathingScale = remember { androidx.compose.animation.core.Animatable(0.6f) }
     val context = LocalContext.current
     val engine = remember { HapticEngine(context) }
+    val configuration = LocalConfiguration.current
+    val isWideLayout = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE || configuration.screenWidthDp >= 840
 
     LaunchedEffect(Unit) {
         engine.emergencyGround()
@@ -140,51 +144,99 @@ fun EmergencyScreen(onClose: () -> Unit) {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp)
-                    .padding(bottom = 120.dp), // Room for Bottom Nav
+                    .padding(bottom = 120.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(Modifier.height(48.dp)) // Proper breathing room
-
-                // VISUALIZER
-                Box(
-                    modifier = Modifier
-                        .size(280.dp)
-                        .background(Color.White.copy(alpha = 0.03f), CircleShape)
-                        .border(0.5.dp, Color.White.copy(alpha = 0.1f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (selectedMode == "Wave") UrgeWaveVisualizer()
-                    else BoxBreathingVisualizer(phase = breathingPhase, scale = breathingScale.value)
-                }
-
-                Spacer(Modifier.height(56.dp)) // Increased gap to prevent touching
-
-                // ACTION BUTTON (Polished)
-                BreathingActionButton(
-                    isRunning = isBreathingRunning,
-                    onClick = { isBreathingRunning = !isBreathingRunning }
-                )
-
                 Spacer(Modifier.height(32.dp))
 
-                // PROTOCOL CARD (Matches SettingsSection style)
-                SettingsSection(title = "Step ${step + 1}") {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Text(
-                            text = steps[step],
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
-                            color = Color.White.copy(alpha = 0.9f),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(Modifier.height(24.dp))
-                        Button(
-                            onClick = { if (step < steps.lastIndex) step++ else step = 0 },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Text("NEXT STEP", fontWeight = FontWeight.Bold, color = Color.Black)
+                if (isWideLayout) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(20.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(320.dp)
+                                    .background(Color.White.copy(alpha = 0.03f), CircleShape)
+                                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (selectedMode == "Wave") UrgeWaveVisualizer()
+                                else BoxBreathingVisualizer(phase = breathingPhase, scale = breathingScale.value)
+                            }
+
+                            Spacer(Modifier.height(24.dp))
+
+                            BreathingActionButton(
+                                isRunning = isBreathingRunning,
+                                onClick = { isBreathingRunning = !isBreathingRunning }
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            SettingsSection(title = "Step ${step + 1}") {
+                                Column(modifier = Modifier.padding(20.dp)) {
+                                    Text(
+                                        text = steps[step],
+                                        style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                                        color = Color.White.copy(alpha = 0.9f),
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Spacer(Modifier.height(24.dp))
+                                    Button(
+                                        onClick = { if (step < steps.lastIndex) step++ else step = 0 },
+                                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                    ) {
+                                        Text("NEXT STEP", fontWeight = FontWeight.Bold, color = Color.Black)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(280.dp)
+                            .background(Color.White.copy(alpha = 0.03f), CircleShape)
+                            .border(0.5.dp, Color.White.copy(alpha = 0.1f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (selectedMode == "Wave") UrgeWaveVisualizer()
+                        else BoxBreathingVisualizer(phase = breathingPhase, scale = breathingScale.value)
+                    }
+
+                    Spacer(Modifier.height(56.dp))
+
+                    BreathingActionButton(
+                        isRunning = isBreathingRunning,
+                        onClick = { isBreathingRunning = !isBreathingRunning }
+                    )
+
+                    Spacer(Modifier.height(32.dp))
+
+                    SettingsSection(title = "Step ${step + 1}") {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text(
+                                text = steps[step],
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
+                                color = Color.White.copy(alpha = 0.9f),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(Modifier.height(24.dp))
+                            Button(
+                                onClick = { if (step < steps.lastIndex) step++ else step = 0 },
+                                modifier = Modifier.fillMaxWidth().height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Text("NEXT STEP", fontWeight = FontWeight.Bold, color = Color.Black)
+                            }
                         }
                     }
                 }

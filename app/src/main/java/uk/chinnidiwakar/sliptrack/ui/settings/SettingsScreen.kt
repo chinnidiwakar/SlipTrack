@@ -1,6 +1,7 @@
 package uk.chinnidiwakar.sliptrack.ui.settings
 
 import android.content.Context
+import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -74,6 +76,9 @@ fun SettingsScreen(
     val context = LocalContext.current
     val appVersion = remember(context) { getAppVersion(context) }
 
+    val configuration = LocalConfiguration.current
+    val isWideLayout = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE || configuration.screenWidthDp >= 840
+
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -87,55 +92,103 @@ fun SettingsScreen(
                 contentPadding = PaddingValues(20.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // CATEGORY: MINDSET (Sattvic / Hindu focus)
-                item {
-                    SettingsSection(title = "Mindset & Purpose") {
-                        JourneyNameEditor(
-                            currentName = journeyName,
-                            onSave = { viewModel.updateJourneyName(it) }
-                        )
-                        HorizontalDivider(color = Color.White.copy(0.05f))
-                        // Suggestion: A "Sankalpa" (Intention) reminder toggle
-                        SettingsToggleRow(
-                            title = "Daily Sankalpa",
-                            subtitle = "Morning reminder of your intention",
-                            checked = true, // You'd bind this to a pref
-                            icon = Icons.Default.SelfImprovement,
-                            onCheckedChange = { /* Toggle logic */ }
-                        )
-                    }
-                }
+                if (isWideLayout) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                SettingsSection(title = "Mindset & Purpose") {
+                                    JourneyNameEditor(
+                                        currentName = journeyName,
+                                        onSave = { viewModel.updateJourneyName(it) }
+                                    )
+                                    HorizontalDivider(color = Color.White.copy(0.05f))
+                                    SettingsToggleRow(
+                                        title = "Daily Sankalpa",
+                                        subtitle = "Morning reminder of your intention",
+                                        checked = true,
+                                        icon = Icons.Default.SelfImprovement,
+                                        onCheckedChange = { }
+                                    )
+                                }
 
-                // CATEGORY: DATA CONTROL
-                item {
-                    SettingsSection(
-                        title = "Vault",
-                        footer = "Your progress is sacred. It stays on this device."
-                    ) {
-                        SettingsClickableRow("Export Journey", "Backup your data", Icons.Default.History, onExport)
-                        HorizontalDivider(color = Color.White.copy(0.05f))
-                        SettingsClickableRow("Import Journey", "Restore progress", Icons.Default.Restore, onImport)
-                    }
-                }
+                                SettingsSection(title = "Environment") {
+                                    SettingsToggleRow(
+                                        title = "AMOLED Sky",
+                                        subtitle = "Zero light pollution",
+                                        checked = themeMode == "sky",
+                                        icon = Icons.Default.NightsStay,
+                                        onCheckedChange = { isSky -> viewModel.updateTheme(if (isSky) "sky" else "material") }
+                                    )
+                                }
+                            }
 
-                // CATEGORY: VISUALS
-                item {
-                    SettingsSection(title = "Environment") {
-                        SettingsToggleRow(
-                            title = "AMOLED Sky",
-                            subtitle = "Zero light pollution",
-                            checked = themeMode == "sky",
-                            icon = Icons.Default.NightsStay,
-                            onCheckedChange = { isSky -> viewModel.updateTheme(if (isSky) "sky" else "material") }
-                        )
-                    }
-                }
+                            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                SettingsSection(
+                                    title = "Vault",
+                                    footer = "Your progress is sacred. It stays on this device."
+                                ) {
+                                    SettingsClickableRow("Export Journey", "Backup your data", Icons.Default.History, onExport)
+                                    HorizontalDivider(color = Color.White.copy(0.05f))
+                                    SettingsClickableRow("Import Journey", "Restore progress", Icons.Default.Restore, onImport)
+                                }
 
-                // INFO
-                item {
-                    SettingsSection(title = "App Info") {
-                        SettingsInfoRow("Version", appVersion)
-                        SettingsInfoRow("Developer", "FalconRising")
+                                SettingsSection(title = "App Info") {
+                                    SettingsInfoRow("Version", appVersion)
+                                    SettingsInfoRow("Developer", "FalconRising")
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    item {
+                        SettingsSection(title = "Mindset & Purpose") {
+                            JourneyNameEditor(
+                                currentName = journeyName,
+                                onSave = { viewModel.updateJourneyName(it) }
+                            )
+                            HorizontalDivider(color = Color.White.copy(0.05f))
+                            SettingsToggleRow(
+                                title = "Daily Sankalpa",
+                                subtitle = "Morning reminder of your intention",
+                                checked = true,
+                                icon = Icons.Default.SelfImprovement,
+                                onCheckedChange = { }
+                            )
+                        }
+                    }
+
+                    item {
+                        SettingsSection(
+                            title = "Vault",
+                            footer = "Your progress is sacred. It stays on this device."
+                        ) {
+                            SettingsClickableRow("Export Journey", "Backup your data", Icons.Default.History, onExport)
+                            HorizontalDivider(color = Color.White.copy(0.05f))
+                            SettingsClickableRow("Import Journey", "Restore progress", Icons.Default.Restore, onImport)
+                        }
+                    }
+
+                    item {
+                        SettingsSection(title = "Environment") {
+                            SettingsToggleRow(
+                                title = "AMOLED Sky",
+                                subtitle = "Zero light pollution",
+                                checked = themeMode == "sky",
+                                icon = Icons.Default.NightsStay,
+                                onCheckedChange = { isSky -> viewModel.updateTheme(if (isSky) "sky" else "material") }
+                            )
+                        }
+                    }
+
+                    item {
+                        SettingsSection(title = "App Info") {
+                            SettingsInfoRow("Version", appVersion)
+                            SettingsInfoRow("Developer", "FalconRising")
+                        }
                     }
                 }
             }

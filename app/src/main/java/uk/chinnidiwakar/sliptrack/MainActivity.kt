@@ -9,6 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import uk.chinnidiwakar.sliptrack.navigation.AppNavigation
 import uk.chinnidiwakar.sliptrack.ui.theme.RelapseTrackerTheme
 
@@ -24,7 +26,9 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermissionIfNeeded()
         enableEdgeToEdge()
         setContent {
-            RelapseTrackerTheme {
+            val preferenceManager = PreferenceManager(this)
+            val themeMode by preferenceManager.themeMode.collectAsState(initial = "sky")
+            RelapseTrackerTheme(themeMode = themeMode) {
                 AppNavigation()
             }
         }
