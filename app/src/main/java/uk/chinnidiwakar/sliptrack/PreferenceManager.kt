@@ -2,6 +2,7 @@ package uk.chinnidiwakar.sliptrack
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -16,6 +17,9 @@ class PreferenceManager(context: Context) {
     companion object {
         val JOURNEY_NAME = stringPreferencesKey("journey_name")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val DAILY_SANKALPA_ENABLED = booleanPreferencesKey("daily_sankalpa_enabled")
+        val DAILY_SANKALPA_TEXT = stringPreferencesKey("daily_sankalpa_text")
+        val SHOW_DAILY_QUOTE = booleanPreferencesKey("show_daily_quote")
         val STREAK_SHIELDS = intPreferencesKey("streak_shields")
         val RESIST_EVENTS_COUNT = intPreferencesKey("resist_events_count")
         val RESIST_SHIELDS_CLAIMED = intPreferencesKey("resist_shields_claimed")
@@ -40,6 +44,36 @@ class PreferenceManager(context: Context) {
     suspend fun saveThemeMode(mode: String) {
         dataStore.edit { prefs ->
             prefs[THEME_MODE] = mode
+        }
+    }
+
+    val dailySankalpaEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[DAILY_SANKALPA_ENABLED] ?: true
+    }
+
+    suspend fun setDailySankalpaEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[DAILY_SANKALPA_ENABLED] = enabled
+        }
+    }
+
+    val dailySankalpaText: Flow<String> = dataStore.data.map { prefs ->
+        prefs[DAILY_SANKALPA_TEXT] ?: "I choose clarity over impulse."
+    }
+
+    suspend fun saveDailySankalpaText(value: String) {
+        dataStore.edit { prefs ->
+            prefs[DAILY_SANKALPA_TEXT] = value.trim().ifEmpty { "I choose clarity over impulse." }
+        }
+    }
+
+    val showDailyQuote: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[SHOW_DAILY_QUOTE] ?: true
+    }
+
+    suspend fun setShowDailyQuote(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[SHOW_DAILY_QUOTE] = enabled
         }
     }
 

@@ -1,6 +1,7 @@
 package uk.chinnidiwakar.sliptrack.ui.home
 
 import android.widget.Toast
+import android.content.res.Configuration
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -58,11 +59,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -94,7 +98,16 @@ fun HomeScreen(navController: NavController) {
     val longestStreak by viewModel.longestStreak.collectAsState()
     val quote by viewModel.dailyQuote.collectAsState()
     val streakShields by viewModel.streakShields.collectAsState()
+    val themeMode by viewModel.themeMode.collectAsState()
+    val showDailyQuote by viewModel.showDailyQuote.collectAsState()
+    val dailySankalpaEnabled by viewModel.dailySankalpaEnabled.collectAsState()
+    val dailySankalpaText by viewModel.dailySankalpaText.collectAsState()
     val engine = remember { HapticEngine(context) }
+    val configuration = LocalConfiguration.current
+    val isWideLayout = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE || configuration.screenWidthDp >= 840
+    val isTablet = configuration.screenWidthDp >= 840
+    val foregroundColor = if (themeMode == "sky") Color.White else MaterialTheme.colorScheme.onBackground
+    val secondaryColor = if (themeMode == "sky") Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
     var showVictoryDialog by remember { mutableStateOf(false) }
     var showSlipDialog by remember { mutableStateOf(false) }
     var showShieldPrompt by remember { mutableStateOf(false) }
@@ -161,13 +174,17 @@ fun HomeScreen(navController: NavController) {
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color.Transparent) {
         Box(modifier = Modifier.fillMaxSize()) {
-            SkyBackground(streak = currentStreak)
+            if (themeMode == "sky") {
+                SkyBackground(streak = currentStreak)
+            } else {
+                Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+            }
 
             IconButton(
                 onClick = { navController.navigate("settings") },
                 modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(end = 8.dp).zIndex(2f)
             ) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
+                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = foregroundColor)
             }
 
             Column(
@@ -179,128 +196,100 @@ fun HomeScreen(navController: NavController) {
                     .padding(bottom = 50.dp), // 👈 reserve dock space properly
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Good day 🌿", modifier = Modifier.padding(top = 16.dp), fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                Text("\"$quote\"", modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = Color.White.copy(alpha = 0.9f), fontStyle = FontStyle.Italic)
-
-                Spacer(Modifier.weight(0.5f))
-
-                // 4. Pass the data INTO the StreakRing
-                StreakRing(
-                    progress = (currentStreak.coerceAtMost(30)) / 30f,
-                    elapsedText = elapsedText,
-                    journeyName = journeyName
-                )
-
-                Spacer(Modifier.height(24.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    StreakItem(value = currentStreak, label = "Current")
-                    StreakItem(value = longestStreak, label = "Best")
+                Text("Good day 🌿", modifier = Modifier.padding(top = 16.dp), fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = foregroundColor)
+                if (showDailyQuote) {
+                    Text("\"$quote\"", modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = secondaryColor.copy(alpha = 0.95f), fontStyle = FontStyle.Italic)
+                }
+                if (dailySankalpaEnabled) {
+                    Text(
+                        text = dailySankalpaText,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = secondaryColor.copy(alpha = 0.9f),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
 
-                Spacer(Modifier.weight(1f))
-                Text("You're trying — that matters 🤍", fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f))
-                Spacer(Modifier.height(24.dp))
-                val infiniteTransition = rememberInfiniteTransition(label = "sosPulse")
-
-                // --- THE TRIO BUTTONS ---
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(onClick = {
-                        engine.victory()
-                        showVictoryDialog = true
-                    }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), shape = RoundedCornerShape(20.dp)) {
-                        Text("Resist 🛡️", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    val scale by infiniteTransition.animateFloat(
-                        initialValue = 1f,
-                        targetValue = 1.06f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(1800, easing = FastOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "scaleAnim"
-                    )
-
-                    val glowAlpha by infiniteTransition.animateFloat(
-                        initialValue = 0.15f,
-                        targetValue = 0.35f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(1800, easing = FastOutSlowInEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "glowAnim"
-                    )
-
-                    Box(
+                if (isWideLayout) {
+                    Row(
                         modifier = Modifier
-                            .size(76.dp)
-                            .graphicsLayer {
-                                scaleX = if (streakShields > 0) scale else 1f
-                                scaleY = if (streakShields > 0) scale else 1f
-                            },
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(top = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-
-                        // Soft spiritual glow aura
-                        if (streakShields > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .size(76.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF8E2A2A).copy(alpha = glowAlpha))
-                                    .blur(16.dp)
-                            )
-                        }
-
-                        Surface(
-                            onClick = { navController.navigate("emergency") },
-                            shape = CircleShape,
-                            tonalElevation = 4.dp,
-                            shadowElevation = 8.dp,
-                            color = Color(0xFF7A1F1F), // deep calm crimson
-                            modifier = Modifier.size(64.dp)
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-
-                                // Soft background shield
-                                Icon(
-                                    imageVector = Icons.Default.Shield,
-                                    contentDescription = "SOS",
-                                    tint = Color.White.copy(alpha = 0.2f),
-                                    modifier = Modifier.size(40.dp)
-                                )
-
-                                // High contrast number
-                                if (streakShields > 0) {
-                                    Text(
-                                        text = streakShields.coerceAtMost(9).toString(),
-                                        fontSize = 20.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color.White,
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            shadow = Shadow(
-                                                color = Color.Black.copy(alpha = 0.4f),
-                                                offset = Offset(1f, 1f),
-                                                blurRadius = 8f
-                                            )
-                                        )
-                                    )
-                                }
+                            StreakRing(
+                                progress = (currentStreak.coerceAtMost(30)) / 30f,
+                                elapsedText = elapsedText,
+                                journeyName = journeyName,
+                                ringSize = if (isTablet) 260.dp else 220.dp,
+                                valueFontSize = if (isTablet) 40.sp else 34.sp,
+                                contentColor = foregroundColor
+                            )
+                            Spacer(Modifier.height(24.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                                StreakItem(value = currentStreak, label = "Current", contentColor = foregroundColor)
+                                StreakItem(value = longestStreak, label = "Best", contentColor = foregroundColor)
                             }
                         }
+
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("You're trying — that matters 🤍", fontSize = 14.sp, color = secondaryColor.copy(alpha = 0.8f))
+                            Spacer(Modifier.height(18.dp))
+                            ActionButtonsRow(
+                                streakShields = streakShields,
+                                onResist = {
+                                    engine.victory()
+                                    showVictoryDialog = true
+                                },
+                                onSlip = {
+                                    engine.victory()
+                                    showSlipDialog = true
+                                },
+                                onEmergency = { navController.navigate("emergency") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                } else {
+                    Spacer(Modifier.weight(0.5f))
+                    StreakRing(
+                        progress = (currentStreak.coerceAtMost(30)) / 30f,
+                        elapsedText = elapsedText,
+                        journeyName = journeyName,
+                        contentColor = foregroundColor
+                    )
+                    Spacer(Modifier.height(24.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        StreakItem(value = currentStreak, label = "Current", contentColor = foregroundColor)
+                        StreakItem(value = longestStreak, label = "Best", contentColor = foregroundColor)
                     }
 
-                    Button(onClick = {
-                        engine.victory()
-                        showSlipDialog = true
-                    }, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)), shape = RoundedCornerShape(20.dp)) {
-                        Text("Slip", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    }
+                    Spacer(Modifier.weight(1f))
+                    Text("You're trying — that matters 🤍", fontSize = 14.sp, color = secondaryColor.copy(alpha = 0.8f))
+                    Spacer(Modifier.height(24.dp))
+                    ActionButtonsRow(
+                        streakShields = streakShields,
+                        onResist = {
+                            engine.victory()
+                            showVictoryDialog = true
+                        },
+                        onSlip = {
+                            engine.victory()
+                            showSlipDialog = true
+                        },
+                        onEmergency = { navController.navigate("emergency") },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)
+                    )
                 }
             }
         }
@@ -308,23 +297,128 @@ fun HomeScreen(navController: NavController) {
 }
 
 @Composable
-fun StreakItem(value: Int, label: String) {
+private fun ActionButtonsRow(
+    streakShields: Int,
+    onResist: () -> Unit,
+    onSlip: () -> Unit,
+    onEmergency: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "sosPulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scaleAnim"
+    )
+
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.35f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAnim"
+    )
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Button(onClick = onResist, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), shape = RoundedCornerShape(20.dp)) {
+            Text("Resist 🛡️", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        }
+
+        Box(
+            modifier = Modifier
+                .size(76.dp)
+                .graphicsLayer {
+                    scaleX = if (streakShields > 0) scale else 1f
+                    scaleY = if (streakShields > 0) scale else 1f
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            if (streakShields > 0) {
+                Box(
+                    modifier = Modifier
+                        .size(76.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF8E2A2A).copy(alpha = glowAlpha))
+                        .blur(16.dp)
+                )
+            }
+
+            Surface(
+                onClick = onEmergency,
+                shape = CircleShape,
+                tonalElevation = 4.dp,
+                shadowElevation = 8.dp,
+                color = Color(0xFF7A1F1F),
+                modifier = Modifier.size(64.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Shield,
+                        contentDescription = "SOS",
+                        tint = Color.White.copy(alpha = 0.2f),
+                        modifier = Modifier.size(40.dp)
+                    )
+
+                    if (streakShields > 0) {
+                        Text(
+                            text = streakShields.coerceAtMost(9).toString(),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = contentColor,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                shadow = Shadow(
+                                    color = Color.Black.copy(alpha = 0.4f),
+                                    offset = Offset(1f, 1f),
+                                    blurRadius = 8f
+                                )
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        Button(onClick = onSlip, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)), shape = RoundedCornerShape(20.dp)) {
+            Text("Slip", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun StreakItem(value: Int, label: String, contentColor: Color = Color.White) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = value.toString(),
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = contentColor,
             style = MaterialTheme.typography.bodyLarge.copy(
                 shadow = Shadow(color = Color.Black, offset = Offset(2f, 2f), blurRadius = 8f)
             )
         )
-        Text(text = label, fontSize = 12.sp, color = Color.White)
+        Text(text = label, fontSize = 12.sp, color = contentColor)
     }
 }
 
 @Composable
-fun StreakRing(progress: Float, elapsedText: String, journeyName: String) {
+fun StreakRing(
+    progress: Float,
+    elapsedText: String,
+    journeyName: String,
+    ringSize: Dp = 200.dp,
+    valueFontSize: TextUnit = 34.sp,
+    contentColor: Color = Color.White
+) {
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
         animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
@@ -335,22 +429,22 @@ fun StreakRing(progress: Float, elapsedText: String, journeyName: String) {
         CircularProgressIndicator(
             progress = { animatedProgress },
             strokeWidth = 8.dp,
-            color = Color.White,
-            trackColor = Color.White.copy(alpha = 0.1f),
-            modifier = Modifier.size(200.dp)
+            color = contentColor,
+            trackColor = contentColor.copy(alpha = 0.15f),
+            modifier = Modifier.size(ringSize)
         )
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = elapsedText,
-                fontSize = 34.sp,
+                fontSize = valueFontSize,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = contentColor
             )
             Text(
                 text = "since $journeyName",
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.7f)
+                color = contentColor.copy(alpha = 0.7f)
             )
         }
     }

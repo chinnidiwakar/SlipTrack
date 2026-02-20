@@ -1,5 +1,6 @@
 package uk.chinnidiwakar.sliptrack.ui.calendar
 
+import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -66,6 +68,8 @@ fun CalendarScreen(onOpenFullHistory: (() -> Unit)? = null) {
 
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
     val selectedDayData = remember(selectedDate, days) { calendarViewModel.getDayData(selectedDate) }
+    val configuration = LocalConfiguration.current
+    val isWideLayout = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE || configuration.screenWidthDp >= 840
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         LazyColumn(
@@ -77,7 +81,7 @@ fun CalendarScreen(onOpenFullHistory: (() -> Unit)? = null) {
             // 1. CALENDAR CARD (Glass)
             item {
                 GlassCard {
-                    Box(modifier = Modifier.padding(16.dp).height(340.dp)) {
+                    Box(modifier = Modifier.padding(16.dp).height(if (isWideLayout) 380.dp else 340.dp)) {
                         HorizontalPager(state = pagerState) { page ->
                             val pageMonth = when (page) {
                                 0 -> month.minusMonths(1)
@@ -97,7 +101,7 @@ fun CalendarScreen(onOpenFullHistory: (() -> Unit)? = null) {
 
             // 2. SELECTED DAY INSIGHT (Glass)
             item {
-                DayInsightCard(selectedDate, selectedDayData)
+                DayInsightCard(selectedDate, selectedDayData, isWideLayout = isWideLayout)
             }
 
             // 3. RECENT ACTIVITY HEADER
@@ -157,7 +161,7 @@ fun GlassCard(
 }
 
 @Composable
-fun DayInsightCard(date: LocalDate, data: CalendarDay?) {
+fun DayInsightCard(date: LocalDate, data: CalendarDay?, isWideLayout: Boolean = false) {
     val relapses = data?.relapses ?: 0
     val resisted = data?.urgesResisted ?: 0
 
@@ -177,7 +181,7 @@ fun DayInsightCard(date: LocalDate, data: CalendarDay?) {
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(if (isWideLayout) 24.dp else 16.dp)) {
                 MetricItem(relapses.toString(), "Slips")
                 MetricItem(resisted.toString(), "Resisted")
             }
