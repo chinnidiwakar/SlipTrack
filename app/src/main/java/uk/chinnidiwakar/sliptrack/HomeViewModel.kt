@@ -124,6 +124,27 @@ class HomeViewModel(
         }
     }
 
+    val dailySankalpaEnabled: StateFlow<Boolean> = preferenceManager.dailySankalpaEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val dailySankalpaText: StateFlow<String> = preferenceManager.dailySankalpaText
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "I choose clarity over impulse.")
+
+    val showDailyQuote: StateFlow<Boolean> = preferenceManager.showDailyQuote
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    fun updateDailySankalpaEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferenceManager.setDailySankalpaEnabled(enabled) }
+    }
+
+    fun updateDailySankalpaText(text: String) {
+        viewModelScope.launch { preferenceManager.saveDailySankalpaText(text) }
+    }
+
+    fun updateShowDailyQuote(enabled: Boolean) {
+        viewModelScope.launch { preferenceManager.setShowDailyQuote(enabled) }
+    }
+
     private fun daysSince(rawTimestamp: Long): Int {
         val date = toLocalDate(rawTimestamp)
         return java.time.temporal.ChronoUnit.DAYS.between(date, java.time.LocalDate.now()).toInt()

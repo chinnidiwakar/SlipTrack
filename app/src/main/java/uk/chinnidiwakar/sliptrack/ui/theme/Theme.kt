@@ -33,26 +33,34 @@ private val LightColors = lightColorScheme(
 private val AmoledColorScheme = darkColorScheme(
     background = Color.Black,
     surface = Color.Black,
+    surfaceVariant = Color(0xFF111111),
     primary = Color(0xFF4CAF50),
+    secondary = Color(0xFF80CBC4),
     onPrimary = Color.White,
     onBackground = Color.White,
     onSurface = Color.White
 )
 
 private val DarkColors = darkColorScheme(
-    background = AmoledBlack,
-    surface = DarkSurface,
+    background = Color(0xFF141A24),
+    surface = Color(0xFF1C2430),
+    surfaceVariant = Color(0xFF243041),
     primary = Accent,
+    secondary = Color(0xFF9FA8DA),
     onBackground = DarkText,
     onSurface = DarkText
 )
 
 @Composable
-fun RelapseTrackerTheme(content: @Composable () -> Unit) {
+fun RelapseTrackerTheme(themeMode: String = "material", content: @Composable () -> Unit) {
     val darkTheme = isSystemInDarkTheme()
+    val colorScheme = when (themeMode) {
+        "sky" -> AmoledColorScheme
+        else -> if (darkTheme) DarkColors else LightColors
+    }
 
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = colorScheme,
         typography = Typography(),
         content = content
     )
