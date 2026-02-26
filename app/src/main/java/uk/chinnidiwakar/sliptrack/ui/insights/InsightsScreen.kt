@@ -1,9 +1,11 @@
 package uk.chinnidiwakar.sliptrack.ui.insights
 
+import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -41,15 +44,26 @@ fun InsightsScreen(onBack: () -> Unit) {
     val insights by viewModel.insights.collectAsState()
     val weeklyReport by viewModel.weeklyReport.collectAsState()
 
+    val configuration = LocalConfiguration.current
+    val isWideLayout = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE || configuration.screenWidthDp >= 840
+
     Surface(color = MaterialTheme.colorScheme.background) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp)
-                .statusBarsPadding()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        BoxWithConstraints {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(if (isWideLayout) 0.95f else 1f)
+                        .align(Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
 
             Spacer(Modifier.height(8.dp))
 
@@ -105,7 +119,9 @@ fun InsightsScreen(onBack: () -> Unit) {
                 WillpowerMeter(score = insights!!.willpowerScore)
             }
 
-            Spacer(Modifier.height(32.dp))
+                    Spacer(Modifier.height(32.dp))
+                }
+            }
         }
     }
 }

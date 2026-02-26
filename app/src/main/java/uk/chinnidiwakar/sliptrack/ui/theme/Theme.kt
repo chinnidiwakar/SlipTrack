@@ -48,11 +48,15 @@ private val DarkColors = darkColorScheme(
 )
 
 @Composable
-fun RelapseTrackerTheme(content: @Composable () -> Unit) {
+fun RelapseTrackerTheme(themeMode: String = "material", content: @Composable () -> Unit) {
     val darkTheme = isSystemInDarkTheme()
+    val colorScheme = when (themeMode) {
+        "sky" -> AmoledColorScheme
+        else -> if (darkTheme) DarkColors else LightColors
+    }
 
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = colorScheme,
         typography = Typography(),
         content = content
     )

@@ -105,10 +105,11 @@ fun computeInsights(events: List<SlipEvent>): InsightsData? {
         .map { it.trigger?.trim().orEmpty() }
         .filter { it.isNotEmpty() }
         .ifEmpty { listOf(UNKNOWN_TRIGGER) }
-        .groupingBy { it }
+        .groupingBy { it.lowercase() }
         .eachCount()
         .maxByOrNull { it.value }
         ?.key
+        ?.replaceFirstChar { it.uppercase() }
 
     val suggestedAction = buildSuggestion(mostCommonHour, topTrigger, hardestWindow)
 
@@ -193,7 +194,7 @@ private fun buildSuggestion(mostCommonHour: String?, topTrigger: String?, hardes
         "Stress" -> "High stress is a pattern. Try a 4-7-8 breathing reset when urges spike."
         "Boredom" -> "Boredom spikes detected. Keep a quick replacement list ready (pushups, walk, call)."
         "Loneliness" -> "Loneliness is a key trigger. Schedule one social check-in daily this week."
-        "Social media" -> "Social media is a trigger. Add a night-time app limit and mute risky feeds."
+        "Social Media" -> "Social media is a trigger. Add a night-time app limit and mute risky feeds."
         else -> "Top trigger: $topTrigger. Create a short pre-commit plan for that situation."
     }
 
