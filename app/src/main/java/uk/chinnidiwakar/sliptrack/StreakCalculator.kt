@@ -1,16 +1,19 @@
 package uk.chinnidiwakar.sliptrack
 
+import uk.chinnidiwakar.sliptrack.utils.DateUtils
 import uk.chinnidiwakar.sliptrack.utils.normalizeTimestamp
 
 object StreakCalculator {
-
     private const val DAY_MILLIS = 1000L * 60 * 60 * 24
 
     fun currentStreak(slips: List<SlipEvent>): Int {
         if (slips.isEmpty()) return 0
 
-        val lastSlip = slips.maxOf { normalizeTimestamp(it.timestamp) }
+        // Always normalize before math
+        val lastSlip = slips.maxOf { DateUtils.normalizeTimestamp(it.timestamp) }
         val diff = System.currentTimeMillis() - lastSlip
+
+        // Logic: 0-23 hours = 0 days, 24-47 hours = 1 day
         return (diff / DAY_MILLIS).toInt()
     }
 

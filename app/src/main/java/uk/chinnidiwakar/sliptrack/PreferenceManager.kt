@@ -23,14 +23,14 @@ class PreferenceManager(context: Context) {
         val LAST_NOTIFIED_STREAK_MILESTONE = intPreferencesKey("last_notified_streak_milestone")
     }
 
+    // --- Journey & Theme ---
+
     val journeyName: Flow<String> = dataStore.data.map { prefs ->
         prefs[JOURNEY_NAME] ?: "last slip"
     }
 
     suspend fun saveJourneyName(name: String) {
-        dataStore.edit { prefs ->
-            prefs[JOURNEY_NAME] = name
-        }
+        dataStore.edit { it[JOURNEY_NAME] = name }
     }
 
     val themeMode: Flow<String> = dataStore.data.map { prefs ->
@@ -38,13 +38,20 @@ class PreferenceManager(context: Context) {
     }
 
     suspend fun saveThemeMode(mode: String) {
-        dataStore.edit { prefs ->
-            prefs[THEME_MODE] = mode
-        }
+        dataStore.edit { it[THEME_MODE] = mode }
     }
+
+    // --- Shield Logic ---
 
     val streakShields: Flow<Int> = dataStore.data.map { prefs ->
         prefs[STREAK_SHIELDS] ?: 1
+    }
+
+    suspend fun addShields(count: Int) {
+        dataStore.edit { prefs ->
+            val current = prefs[STREAK_SHIELDS] ?: 1
+            prefs[STREAK_SHIELDS] = current + count
+        }
     }
 
     suspend fun consumeShield(): Boolean {
@@ -59,13 +66,18 @@ class PreferenceManager(context: Context) {
         return consumed
     }
 
-    suspend fun awardShield(count: Int = 1) {
-        if (count <= 0) return
-        dataStore.edit { prefs ->
-            val current = prefs[STREAK_SHIELDS] ?: 1
-            prefs[STREAK_SHIELDS] = current + count
-        }
+    // --- Milestone Logic ---
+
+    // Fixed: Using the correct key defined in companion object
+    fun getLastAwardedMilestone(): Flow<Int> = dataStore.data.map {
+        it[LAST_SHIELD_MILESTONE_AWARDED] ?: 0
     }
+
+    suspend fun saveLastAwardedMilestone(days: Int) {
+        dataStore.edit { it[LAST_SHIELD_MILESTONE_AWARDED] = days }
+    }
+
+    // --- Reward Logic ---
 
     suspend fun rewardForResistIfEligible(): Int {
         var newShields = 0
@@ -78,8 +90,8 @@ class PreferenceManager(context: Context) {
             val delta = (eligible - claimed).coerceAtLeast(0)
 
             if (delta > 0) {
-                val currentShields = prefs[STREAK_SHIELDS] ?: 1
-                prefs[STREAK_SHIELDS] = currentShields + delta
+                val current = prefs[STREAK_SHIELDS] ?: 1
+                prefs[STREAK_SHIELDS] = current + delta
                 prefs[RESIST_SHIELDS_CLAIMED] = claimed + delta
                 newShields = delta
             }
@@ -94,8 +106,9 @@ class PreferenceManager(context: Context) {
             val milestoneAwards = ShieldPolicy.countNewMilestoneShields(previousMilestone, streakDays)
 
             if (milestoneAwards > 0) {
-                val currentShields = prefs[STREAK_SHIELDS] ?: 1
-                prefs[STREAK_SHIELDS] = currentShields + milestoneAwards
+                val current = prefs[STREAK_SHIELDS] ?: 1
+                prefs[STREAK_SHIELDS] = current + milestoneAwards
+                // Update to the highest milestone passed
                 prefs[LAST_SHIELD_MILESTONE_AWARDED] = ShieldPolicy.highestReachedMilestone(streakDays)
                 newShields = milestoneAwards
             }
@@ -107,8 +120,12 @@ class PreferenceManager(context: Context) {
         var shouldNotify = false
         dataStore.edit { prefs ->
             val lastNotified = prefs[LAST_NOTIFIED_STREAK_MILESTONE] ?: 0
-            if (streakDays > lastNotified) {
-                prefs[LAST_NOTIFIED_STREAK_MILESTONE] = streakDays
+            // Only notify if this is a NEW milestone we haven't messaged about
+            val milestones = listOf(1, 3, 7, 14, 30, 60, 90, 180, 365)
+            val currentMilestone = milestones.lastOrNull { it <= streakDays } ?: 0
+
+            if (currentMilestone > lastNotified) {
+                prefs[LAST_NOTIFIED_STREAK_MILESTONE] = currentMilestone
                 shouldNotify = true
             }
         }

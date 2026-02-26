@@ -11,9 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import java.time.LocalDate
-import java.time.temporal.ChronoUnit
-import uk.chinnidiwakar.sliptrack.utils.toLocalDate
+import kotlinx.coroutines.flow.first
 
 class StreakWorker(
     appContext: Context,
@@ -23,23 +21,43 @@ class StreakWorker(
     private val dao = DatabaseProvider.get(applicationContext).slipDao()
     private val preferenceManager = PreferenceManager(applicationContext)
 
+    // Inside StreakWorker.kt
+
     override suspend fun doWork(): Result {
         val lastSlip = dao.getLastActualSlip() ?: return Result.success()
-        val streakDays = daysSince(lastSlip.timestamp)
 
-        val milestones = setOf(1, 3, 7, 14, 30, 60, 90, 180, 365)
-        if (streakDays in milestones && preferenceManager.shouldNotifyMilestone(streakDays)) {
-            val shieldsAwarded = preferenceManager.rewardForMilestoneIfEligible(streakDays)
+        // Unified 24-hour math
+        val diffMillis = System.currentTimeMillis() - lastSlip.timestamp
+        val streakDays = (diffMillis / (1000L * 60 * 60 * 24)).toInt()
+
+        // Get the last milestone we actually awarded from Prefs
+        val lastAwarded = preferenceManager.getLastAwardedMilestone().first()
+
+        // Calculate how many NEW milestone shields to give
+        val shieldsToAward = ShieldPolicy.countNewMilestoneShields(lastAwarded, streakDays)
+
+        if (shieldsToAward > 0) {
+            // 1. Update the last awarded milestone to the current highest one
+            val currentHighest = ShieldPolicy.highestReachedMilestone(streakDays)
+            preferenceManager.saveLastAwardedMilestone(currentHighest)
+
+            // 2. Add the shields to the user's total
+            preferenceManager.addShields(shieldsToAward)
+
+            // 3. Notify the user
             createNotificationChannel()
-            postMilestoneNotification(streakDays, shieldsAwarded)
+            postMilestoneNotification(streakDays, shieldsToAward)
+
+            // 4. Refresh the Widget immediately
+            //SlipTrackWidgetReceiver.refresh(applicationContext)
         }
 
         return Result.success()
     }
 
     private fun daysSince(timestamp: Long): Int {
-        val lastDate = toLocalDate(timestamp)
-        return ChronoUnit.DAYS.between(lastDate, LocalDate.now()).toInt()
+        val diff = System.currentTimeMillis() - timestamp
+        return (diff / (1000L * 60 * 60 * 24)).toInt()
     }
 
     private fun createNotificationChannel() {

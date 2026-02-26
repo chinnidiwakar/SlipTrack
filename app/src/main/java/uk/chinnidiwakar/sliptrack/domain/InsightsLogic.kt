@@ -2,12 +2,22 @@ package uk.chinnidiwakar.sliptrack.domain
 
 import uk.chinnidiwakar.sliptrack.SlipEvent
 import uk.chinnidiwakar.sliptrack.StreakCalculator
-import uk.chinnidiwakar.sliptrack.utils.toLocalDate
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
 private const val UNKNOWN_TRIGGER = "Unspecified"
+
+data class RiskAssessment(
+    val score: Int,
+    val level: RiskLevel
+)
+
+enum class RiskLevel {
+    STABLE,
+    CAUTION,
+    HIGH
+}
 
 data class InsightsData(
     val mostCommonHour: String?,
@@ -19,7 +29,8 @@ data class InsightsData(
     val hardestWindow: String?,
     val topTrigger: String?,
     val suggestedAction: String?,
-    val willpowerScore: Int
+    val willpowerScore: Int,
+    val riskAssessment: RiskAssessment
 )
 
 data class WeeklyReport(
@@ -27,6 +38,39 @@ data class WeeklyReport(
     val victoriesThisWeek: Int,
     val cleanDaysThisWeek: Int
 )
+
+fun calculateRiskIndex(
+    currentStreak: Int,
+    slipsLast7Days: Int,
+    weekDelta: Int
+): RiskAssessment {
+
+    val streakPenalty = when {
+        currentStreak >= 14 -> 0
+        currentStreak >= 7 -> 10
+        currentStreak >= 3 -> 25
+        else -> 40
+    }
+
+    val velocityScore = (slipsLast7Days * 5).coerceAtMost(35)
+
+    val trendScore = when {
+        weekDelta > 0 -> 25
+        weekDelta < 0 -> -10
+        else -> 0
+    }
+
+    val rawScore = (streakPenalty + velocityScore + trendScore)
+        .coerceIn(0, 100)
+
+    val level = when {
+        rawScore <= 33 -> RiskLevel.STABLE
+        rawScore <= 66 -> RiskLevel.CAUTION
+        else -> RiskLevel.HIGH
+    }
+
+    return RiskAssessment(rawScore, level)
+}
 
 fun calculateWillpower(events: List<SlipEvent>): Int {
     val totalUrges = events.size
@@ -43,6 +87,7 @@ fun computeInsights(events: List<SlipEvent>): InsightsData? {
     val times = slips.map {
         Instant.ofEpochMilli(normalizeTimestamp(it.timestamp)).atZone(zone)
     }
+    val riskAssessment: RiskAssessment
 
     val mostCommonHour = times
         .groupingBy { it.hour }
@@ -90,6 +135,23 @@ fun computeInsights(events: List<SlipEvent>): InsightsData? {
     val currentStreak = "${StreakCalculator.currentStreak(slips)} days"
 
     val recentSlipRate = recentSlipRate(events)
+    val slipsLast7Days = events
+        .filter { !it.isResist }
+        .count {
+            Instant.ofEpochMilli(normalizeTimestamp(it.timestamp))
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate() >= LocalDate.now().minusDays(6)
+        }
+
+    val weekDelta = thisWeekCount - lastWeekCount
+
+    val currentStreakValue = StreakCalculator.currentStreak(slips)
+
+    val risk = calculateRiskIndex(
+        currentStreak = currentStreakValue,
+        slipsLast7Days = slipsLast7Days,
+        weekDelta = weekDelta
+    )
 
     val hardestWindow = times
         .groupingBy { (it.hour / 6) * 6 }
@@ -123,7 +185,8 @@ fun computeInsights(events: List<SlipEvent>): InsightsData? {
         hardestWindow = hardestWindow,
         topTrigger = topTrigger,
         suggestedAction = suggestedAction,
-        willpowerScore = calculateWillpower(events)
+        willpowerScore = calculateWillpower(events),
+        riskAssessment = risk
     )
 }
 
@@ -155,11 +218,11 @@ fun computeWeeklyReport(allEvents: List<SlipEvent>): WeeklyReport {
     )
 }
 
-private fun normalizeTimestamp(raw: Long): Long {
+fun normalizeTimestamp(raw: Long): Long {
     return if (raw < 1_000_000_000_000L) raw * 1000 else raw
 }
 
-private fun recentSlipRate(events: List<SlipEvent>): String {
+fun recentSlipRate(events: List<SlipEvent>): String {
     val today = LocalDate.now()
     val windowStart = today.minusDays(6)
 

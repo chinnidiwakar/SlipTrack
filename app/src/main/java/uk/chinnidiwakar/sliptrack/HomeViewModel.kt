@@ -16,7 +16,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import uk.chinnidiwakar.sliptrack.utils.DateUtils.formatElapsedTime
 import uk.chinnidiwakar.sliptrack.utils.normalizeTimestamp
-import uk.chinnidiwakar.sliptrack.utils.toLocalDate
 
 class HomeViewModel(
     private val dao: SlipDao,
@@ -78,13 +77,13 @@ class HomeViewModel(
                     else -> null
                 }
 
-                baselineTime?.let { lastRelapseTime = normalizeTimestamp(it) }
-
-                val current = if (actualSlips.isNotEmpty()) {
-                    StreakCalculator.currentStreak(actualSlips)
-                } else {
-                    baselineTime?.let { daysSince(it) } ?: 0
+                baselineTime?.let {
+                    lastRelapseTime = normalizeTimestamp(it)
                 }
+
+                // Using unified 24-hour logic for both cases
+                val current = baselineTime?.let { daysSince(it) } ?: 0
+
                 val longest = if (actualSlips.isNotEmpty()) {
                     StreakCalculator.longestStreak(actualSlips)
                 } else {
@@ -100,10 +99,22 @@ class HomeViewModel(
     private fun startTimer() {
         viewModelScope.launch {
             while (currentCoroutineContext().isActive) {
-                _elapsedText.value =
-                    formatElapsedTime(
-                        System.currentTimeMillis() - lastRelapseTime
-                    )
+                val now = System.currentTimeMillis()
+                val diff = now - lastRelapseTime
+
+                _elapsedText.value = formatElapsedTime(diff)
+
+                // Every time a new 24-hour block completes, check for rewards
+                val currentDays = (diff / (1000L * 60 * 60 * 24)).toInt()
+                if (currentDays > _currentStreak.value) {
+                    _currentStreak.value = currentDays
+
+                    // Award shields if they hit a milestone (1, 3, 7...)
+                    val earned = preferenceManager.rewardForMilestoneIfEligible(currentDays)
+                    if (earned > 0) {
+                        _uiMessages.emit("🏆 Milestone! Earned $earned shields 🛡️")
+                    }
+                }
                 delay(1000)
             }
         }
@@ -124,9 +135,11 @@ class HomeViewModel(
         }
     }
 
+    // Change this function in HomeViewModel.kt
     private fun daysSince(rawTimestamp: Long): Int {
-        val date = toLocalDate(rawTimestamp)
-        return java.time.temporal.ChronoUnit.DAYS.between(date, java.time.LocalDate.now()).toInt()
+        val diff = System.currentTimeMillis() - normalizeTimestamp(rawTimestamp)
+        // 86,400,000 ms = 24 hours
+        return (diff / (1000L * 60 * 60 * 24)).toInt()
     }
 
     fun logSlip(triggerLabel: String? = null) {
