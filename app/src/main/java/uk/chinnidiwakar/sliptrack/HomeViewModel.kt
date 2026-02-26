@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import uk.chinnidiwakar.sliptrack.domain.InsightsData
+import uk.chinnidiwakar.sliptrack.domain.computeInsights
 import uk.chinnidiwakar.sliptrack.utils.DateUtils.formatElapsedTime
 import uk.chinnidiwakar.sliptrack.utils.normalizeTimestamp
 
@@ -21,7 +23,8 @@ class HomeViewModel(
     private val dao: SlipDao,
     private val preferenceManager: PreferenceManager
 ) : ViewModel() {
-
+    private val _insights = MutableStateFlow<InsightsData?>(null)
+    val insights: StateFlow<InsightsData?> = _insights.asStateFlow()
     private val _dailyQuote = MutableStateFlow("")
     val dailyQuote: StateFlow<String> = _dailyQuote.asStateFlow()
 
@@ -90,6 +93,7 @@ class HomeViewModel(
                     current
                 }
 
+                _insights.value = computeInsights(allEvents)
                 _currentStreak.value = current
                 _longestStreak.value = maxOf(current, longest)
             }

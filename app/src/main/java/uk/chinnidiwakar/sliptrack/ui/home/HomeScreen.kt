@@ -74,13 +74,15 @@ import androidx.navigation.NavController
 import uk.chinnidiwakar.sliptrack.HapticEngine
 import uk.chinnidiwakar.sliptrack.HomeViewModel
 import uk.chinnidiwakar.sliptrack.HomeViewModelFactory
+import uk.chinnidiwakar.sliptrack.InsightsViewModel
+import uk.chinnidiwakar.sliptrack.InsightsViewModelFactory
 import uk.chinnidiwakar.sliptrack.SkyBackground
+import uk.chinnidiwakar.sliptrack.domain.RiskLevel
 
 
 @Composable
 fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
-
 
     // 1. Get the tools needed for the Factory
     val database = remember { uk.chinnidiwakar.sliptrack.DatabaseProvider.get(context) }
@@ -108,8 +110,21 @@ fun HomeScreen(navController: NavController) {
     var showShieldPrompt by remember { mutableStateOf(false) }
     var pendingTrigger by remember { mutableStateOf<String?>(null) }
 
+
+
+    val homeViewModel: HomeViewModel = viewModel(
+        factory = HomeViewModelFactory(dao, preferenceManager)
+    )
+
+    val insightsViewModel: InsightsViewModel = viewModel(
+        factory = InsightsViewModelFactory(context)
+    )
+
+    val insights by insightsViewModel.insights.collectAsState()
+    val riskLevel = insights?.riskAssessment?.level
+
     LaunchedEffect(Unit) {
-        viewModel.uiMessages.collect { message ->
+        viewModel.uiMessages.collect { message: String ->
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
@@ -224,6 +239,7 @@ fun HomeScreen(navController: NavController) {
                             Spacer(Modifier.height(18.dp))
                             ActionButtonsRow(
                                 streakShields = streakShields,
+                                riskLevel = riskLevel,
                                 onResist = {
                                     engine.victory()
                                     showVictoryDialog = true
@@ -256,6 +272,7 @@ fun HomeScreen(navController: NavController) {
                     Spacer(Modifier.height(24.dp))
                     ActionButtonsRow(
                         streakShields = streakShields,
+                        riskLevel = riskLevel,
                         onResist = {
                             engine.victory()
                             showVictoryDialog = true
@@ -265,7 +282,9 @@ fun HomeScreen(navController: NavController) {
                             showSlipDialog = true
                         },
                         onEmergency = { navController.navigate("emergency") },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 32.dp)
                     )
                 }
             }
@@ -276,6 +295,7 @@ fun HomeScreen(navController: NavController) {
 @Composable
 private fun ActionButtonsRow(
     streakShields: Int,
+    riskLevel: RiskLevel?,
     onResist: () -> Unit,
     onSlip: () -> Unit,
     onEmergency: () -> Unit,
@@ -311,15 +331,17 @@ private fun ActionButtonsRow(
             text = "Resist 🛡️",
             accentColor = Color(0xFF66BB6A),
             onClick = onResist,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            riskLevel = riskLevel,
+            isPrimary = true
         )
 
         Box(
             modifier = Modifier
                 .size(76.dp)
                 .graphicsLayer {
-                    scaleX = if (streakShields > 0) scale else 1f
-                    scaleY = if (streakShields > 0) scale else 1f
+                    scaleX = if (riskLevel == RiskLevel.HIGH) 1.18f else if (streakShields > 0) scale else 1f
+                    scaleY = if (riskLevel == RiskLevel.HIGH) 1.18f else if (streakShields > 0) scale else 1f
                 },
             contentAlignment = Alignment.Center
         ) {
@@ -372,7 +394,9 @@ private fun ActionButtonsRow(
             text = "Slip",
             accentColor = Color(0xFFEF5350),
             onClick = onSlip,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            riskLevel = riskLevel,
+            isPrimary = false
         )
     }
 }
@@ -528,47 +552,76 @@ fun PremiumGlassButton(
     text: String,
     accentColor: Color,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    riskLevel: RiskLevel? = null,
+    isPrimary: Boolean
 ) {
-    val pressScale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = tween(120),
-        label = "pressScale"
+
+    val infiniteTransition = rememberInfiniteTransition(label = "sweep")
+
+    // Light sweep animation
+    val sweepOffset by infiniteTransition.animateFloat(
+        initialValue = -300f,
+        targetValue = 600f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "sweepAnim"
     )
+
+    // Subtle glow if Stable and primary (Resist)
+    val glowAlpha = if (riskLevel == RiskLevel.STABLE && isPrimary) 0.12f else 0f
 
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(22.dp),
-        color = Color.White.copy(alpha = 0.04f), // lighter glass
-        shadowElevation = 0.dp,                 // 🚫 remove shadow
-        tonalElevation = 0.dp,                  // 🚫 remove tonal elevation
+        color = Color.White.copy(alpha = 0.04f),
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp,
         modifier = modifier
             .height(60.dp)
-            .graphicsLayer {
-                scaleX = pressScale
-                scaleY = pressScale
-            }
             .border(
-                width = 1.dp,
-                color = Color.White.copy(alpha = 0.08f),
+                width = if (glowAlpha > 0f) 1.dp else 0.dp,
+                color = accentColor.copy(alpha = glowAlpha),
                 shape = RoundedCornerShape(22.dp)
             )
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Color.White.copy(alpha = 0.03f),
-                    RoundedCornerShape(22.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = text,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = accentColor
-            )
+        Box(modifier = Modifier.fillMaxSize()) {
+
+            // Light sweep effect (only when stable + primary)
+            if (riskLevel == RiskLevel.STABLE && isPrimary) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(22.dp))
+                        .graphicsLayer {
+                            translationX = sweepOffset
+                            rotationZ = 15f
+                        }
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    accentColor.copy(alpha = 0.08f),
+                                    Color.Transparent
+                                )
+                            )
+                        )
+                )
+            }
+
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = text,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor
+                )
+            }
         }
     }
 }

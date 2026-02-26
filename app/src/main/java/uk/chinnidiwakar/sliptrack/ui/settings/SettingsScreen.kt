@@ -320,3 +320,4 @@ fun SettingsInfoRow(title: String, value: String) {
 fun getAppVersion(context: Context): String {
     return try { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0" } catch (e: Exception) { "1.0" }
 }
+
