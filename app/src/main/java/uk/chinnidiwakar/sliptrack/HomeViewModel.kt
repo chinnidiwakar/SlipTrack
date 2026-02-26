@@ -16,7 +16,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import uk.chinnidiwakar.sliptrack.utils.DateUtils.formatElapsedTime
 import uk.chinnidiwakar.sliptrack.utils.normalizeTimestamp
-import uk.chinnidiwakar.sliptrack.utils.toLocalDate
 
 class HomeViewModel(
     private val dao: SlipDao,
@@ -93,6 +92,7 @@ class HomeViewModel(
 
                 _currentStreak.value = current
                 _longestStreak.value = maxOf(current, longest)
+                SlipTrackWidgetProvider.updateAll(viewModelScope.coroutineContext, dao, preferenceManager)
             }
         }
     }
@@ -124,9 +124,18 @@ class HomeViewModel(
         }
     }
 
-    private fun daysSince(rawTimestamp: Long): Int {
-        val date = toLocalDate(rawTimestamp)
-        return java.time.temporal.ChronoUnit.DAYS.between(date, java.time.LocalDate.now()).toInt()
+    private fun daysSince(rawTimestamp: Long): Int = StreakCalculator.fullDaysSince(rawTimestamp)
+
+    fun dayProgress(): Float {
+        val elapsed = (System.currentTimeMillis() - lastRelapseTime).coerceAtLeast(0L)
+        val inCurrentDay = elapsed % (24 * 60 * 60 * 1000L)
+        return (inCurrentDay / (24f * 60f * 60f * 1000f)).coerceIn(0f, 1f)
+    }
+
+    fun hoursUntilNextDay(): Int {
+        val elapsed = (System.currentTimeMillis() - lastRelapseTime).coerceAtLeast(0L)
+        val remaining = (24 * 60 * 60 * 1000L) - (elapsed % (24 * 60 * 60 * 1000L))
+        return kotlin.math.ceil(remaining / (60 * 60 * 1000.0)).toInt().coerceAtLeast(0)
     }
 
     fun logSlip(triggerLabel: String? = null) {
