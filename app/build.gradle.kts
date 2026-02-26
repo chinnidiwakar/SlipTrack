@@ -22,7 +22,7 @@ android {
         minSdk = 30
         targetSdk = 35
         versionCode = 1
-        versionName = "0.50"
+        versionName = "0.60"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -87,9 +87,9 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    implementation("com.google.android.gms:play-services-wearable:18.1.0")
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
-    implementation("androidx.glance:glance:1.1.1")
-    implementation("androidx.glance:glance-appwidget:1.1.1")
-    implementation("androidx.glance:glance-material3:1.1.1")
+    implementation(libs.play.services.wearable.v1810)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.glance)
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
 }

@@ -1,5 +1,9 @@
 [versions]
 agp = "8.7.0"
+datastorePreferences = "1.2.0"
+glance = "1.1.1"
+glanceAppwidget = "1.1.1"
+glanceMaterial3 = "1.1.1"
 kotlin = "2.0.21"
 coreKtx = "1.12.0" # Updated for SDK 35 compatibility
 junit = "4.13.2"
@@ -11,6 +15,7 @@ composeBom = "2024.10.01"
 ksp = "2.0.21-1.0.28"
 material3 = "1.3.1" # Stable M3 version
 navigationCompose = "2.8.3"
+playServicesWearableVersion = "18.1.0"
 room = "2.6.1"
 workRuntimeKtx = "2.10.0"
 material3Version = "1.4.0"
@@ -29,6 +34,10 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 
 # Core & UI
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-glance = { module = "androidx.glance:glance", version.ref = "glance" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
+androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glanceAppwidget" }
+androidx-glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glanceMaterial3" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
@@ -40,6 +49,7 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 # Room (Unified versioning)
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+play-services-wearable-v1810 = { module = "com.google.android.gms:play-services-wearable", version.ref = "playServicesWearableVersion" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 # Work Manager

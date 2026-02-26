@@ -93,6 +93,9 @@ fun HomeScreen(navController: NavController) {
     val viewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(dao, preferenceManager)
     )
+    val insightsViewModel: InsightsViewModel = viewModel(
+        factory = InsightsViewModelFactory(context)
+    )
 
     // 3. Collect State
     val elapsedText by viewModel.elapsedText.collectAsState()
@@ -103,22 +106,13 @@ fun HomeScreen(navController: NavController) {
     val streakShields by viewModel.streakShields.collectAsState()
     val engine = remember { HapticEngine(context) }
     val configuration = LocalConfiguration.current
-    val isWideLayout = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE || configuration.screenWidthDp >= 840
+    val isWideLayout =
+        configuration.orientation == Configuration.ORIENTATION_LANDSCAPE || configuration.screenWidthDp >= 840
     val isTablet = configuration.screenWidthDp >= 840
     var showVictoryDialog by remember { mutableStateOf(false) }
     var showSlipDialog by remember { mutableStateOf(false) }
     var showShieldPrompt by remember { mutableStateOf(false) }
     var pendingTrigger by remember { mutableStateOf<String?>(null) }
-
-
-
-    val homeViewModel: HomeViewModel = viewModel(
-        factory = HomeViewModelFactory(dao, preferenceManager)
-    )
-
-    val insightsViewModel: InsightsViewModel = viewModel(
-        factory = InsightsViewModelFactory(context)
-    )
 
     val insights by insightsViewModel.insights.collectAsState()
     val riskLevel = insights?.riskAssessment?.level
@@ -136,7 +130,11 @@ fun HomeScreen(navController: NavController) {
             actionLabel = "Victory",
             onDismiss = { showVictoryDialog = false },
             onConfirm = { level, selectedTrigger ->
-                viewModel.logEvent(isResist = true, intensity = level, triggerLabel = selectedTrigger)
+                viewModel.logEvent(
+                    isResist = true,
+                    intensity = level,
+                    triggerLabel = selectedTrigger
+                )
                 showVictoryDialog = false
             }
         )
@@ -188,7 +186,11 @@ fun HomeScreen(navController: NavController) {
 
             IconButton(
                 onClick = { navController.navigate("settings") },
-                modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(end = 8.dp).zIndex(2f)
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(end = 8.dp)
+                    .zIndex(2f)
             ) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
             }
@@ -202,8 +204,21 @@ fun HomeScreen(navController: NavController) {
                     .padding(bottom = 50.dp), // 👈 reserve dock space properly
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Good day 🌿", modifier = Modifier.padding(top = 16.dp), fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                Text("\"$quote\"", modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = Color.White.copy(alpha = 0.9f), fontStyle = FontStyle.Italic)
+                Text(
+                    "Good day 🌿",
+                    modifier = Modifier.padding(top = 16.dp),
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+                Text(
+                    "\"$quote\"",
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontStyle = FontStyle.Italic
+                )
 
                 if (isWideLayout) {
                     Row(
@@ -225,7 +240,10 @@ fun HomeScreen(navController: NavController) {
                                 valueFontSize = if (isTablet) 40.sp else 34.sp
                             )
                             Spacer(Modifier.height(24.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
                                 StreakItem(value = currentStreak, label = "Current")
                                 StreakItem(value = longestStreak, label = "Best")
                             }
@@ -235,7 +253,11 @@ fun HomeScreen(navController: NavController) {
                             modifier = Modifier.weight(1f),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text("You're trying — that matters 🤍", fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f))
+                            Text(
+                                "You're trying — that matters 🤍",
+                                fontSize = 14.sp,
+                                color = Color.White.copy(alpha = 0.6f)
+                            )
                             Spacer(Modifier.height(18.dp))
                             ActionButtonsRow(
                                 streakShields = streakShields,
@@ -262,13 +284,20 @@ fun HomeScreen(navController: NavController) {
                     )
                     Spacer(Modifier.height(24.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
                         StreakItem(value = currentStreak, label = "Current")
                         StreakItem(value = longestStreak, label = "Best")
                     }
 
                     Spacer(Modifier.weight(1f))
-                    Text("You're trying — that matters 🤍", fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f))
+                    Text(
+                        "You're trying — that matters 🤍",
+                        fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.6f)
+                    )
                     Spacer(Modifier.height(24.dp))
                     ActionButtonsRow(
                         streakShields = streakShields,
@@ -340,8 +369,10 @@ private fun ActionButtonsRow(
             modifier = Modifier
                 .size(76.dp)
                 .graphicsLayer {
-                    scaleX = if (riskLevel == RiskLevel.HIGH) 1.18f else if (streakShields > 0) scale else 1f
-                    scaleY = if (riskLevel == RiskLevel.HIGH) 1.18f else if (streakShields > 0) scale else 1f
+                    scaleX =
+                        if (riskLevel == RiskLevel.HIGH) 1.18f else if (streakShields > 0) scale else 1f
+                    scaleY =
+                        if (riskLevel == RiskLevel.HIGH) 1.18f else if (streakShields > 0) scale else 1f
                 },
             contentAlignment = Alignment.Center
         ) {
@@ -466,7 +497,8 @@ fun TriggerDialog(
 ) {
     var selectedIntensity by remember { mutableIntStateOf(2) }
     var selectedTrigger by remember { mutableStateOf<String?>(null) }
-    val triggerOptions = listOf("Stress", "Boredom", "Loneliness", "Social Media", "Fatigue", "Late Night", "Other")
+    val triggerOptions =
+        listOf("Stress", "Boredom", "Loneliness", "Social Media", "Fatigue", "Late Night", "Other")
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -483,11 +515,13 @@ fun TriggerDialog(
                             selected = selectedIntensity == level,
                             onClick = { selectedIntensity = level },
                             label = {
-                                Text(when(level) {
-                                    1 -> "Mild"
-                                    2 -> "Strong"
-                                    else -> "Extreme"
-                                })
+                                Text(
+                                    when (level) {
+                                        1 -> "Mild"
+                                        2 -> "Strong"
+                                        else -> "Extreme"
+                                    }
+                                )
                             },
                             modifier = Modifier.weight(1f)
                         )
@@ -514,7 +548,9 @@ fun TriggerDialog(
             Button(
                 onClick = { onConfirm(selectedIntensity, selectedTrigger) },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (actionLabel == "Victory") Color(0xFF4CAF50) else Color(0xFFE57373)
+                    containerColor = if (actionLabel == "Victory") Color(0xFF4CAF50) else Color(
+                        0xFFE57373
+                    )
                 )
             ) {
                 Text("Log $actionLabel")
