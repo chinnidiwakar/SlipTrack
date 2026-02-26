@@ -2,6 +2,7 @@ package uk.chinnidiwakar.sliptrack.ui.insights
 
 import android.content.res.Configuration
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -96,14 +97,24 @@ fun InsightsScreen(onBack: () -> Unit) {
 
                         // Pulse for HIGH risk
                         val pulseScale = if (risk.level == RiskLevel.HIGH) {
-                            androidx.compose.animation.core.animateFloatAsState(
-                                targetValue = 1.05f,
+
+                            val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(
+                                label = "pulse_transition"
+                            )
+
+                            infiniteTransition.animateFloat(
+                                initialValue = 1f,
+                                targetValue = 1.12f,
                                 animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-                                    animation = tween(800),
+                                    animation = tween(
+                                        durationMillis = 600,
+                                        easing = FastOutSlowInEasing
+                                    ),
                                     repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
                                 ),
-                                label = "pulse"
+                                label = "pulse_anim"
                             ).value
+
                         } else 1f
 
                         // Subtle glow for STABLE
@@ -193,7 +204,7 @@ fun InsightsScreen(onBack: () -> Unit) {
                                     }
 
                                     Text(
-                                        "${risk.score}%",
+                                        "${risk.level}",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = accentColor
