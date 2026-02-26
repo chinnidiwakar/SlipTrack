@@ -1,7 +1,7 @@
 package uk.chinnidiwakar.sliptrack.ui.home
 
-import android.widget.Toast
 import android.content.res.Configuration
+import android.widget.Toast
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -10,6 +10,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,15 +59,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -283,9 +284,9 @@ private fun ActionButtonsRow(
     val infiniteTransition = rememberInfiniteTransition(label = "sosPulse")
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.06f,
+        targetValue = 1.12f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = FastOutSlowInEasing),
+            animation = tween(900, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scaleAnim"
@@ -306,9 +307,12 @@ private fun ActionButtonsRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Button(onClick = onResist, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), shape = RoundedCornerShape(20.dp)) {
-            Text("Resist 🛡️", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        }
+        PremiumGlassButton(
+            text = "Resist 🛡️",
+            accentColor = Color(0xFF66BB6A),
+            onClick = onResist,
+            modifier = Modifier.weight(1f)
+        )
 
         Box(
             modifier = Modifier
@@ -364,9 +368,12 @@ private fun ActionButtonsRow(
             }
         }
 
-        Button(onClick = onSlip, modifier = Modifier.weight(1f).height(60.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE57373)), shape = RoundedCornerShape(20.dp)) {
-            Text("Slip", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        }
+        PremiumGlassButton(
+            text = "Slip",
+            accentColor = Color(0xFFEF5350),
+            onClick = onSlip,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -511,6 +518,56 @@ fun ShieldCountBadge(count: Int, modifier: Modifier = Modifier) {
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
+            )
+        }
+    }
+}
+
+@Composable
+fun PremiumGlassButton(
+    text: String,
+    accentColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val pressScale by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(120),
+        label = "pressScale"
+    )
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(22.dp),
+        color = Color.White.copy(alpha = 0.04f), // lighter glass
+        shadowElevation = 0.dp,                 // 🚫 remove shadow
+        tonalElevation = 0.dp,                  // 🚫 remove tonal elevation
+        modifier = modifier
+            .height(60.dp)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.08f),
+                shape = RoundedCornerShape(22.dp)
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Color.White.copy(alpha = 0.03f),
+                    RoundedCornerShape(22.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = accentColor
             )
         }
     }
