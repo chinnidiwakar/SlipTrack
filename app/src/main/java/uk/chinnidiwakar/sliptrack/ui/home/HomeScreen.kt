@@ -36,6 +36,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -197,6 +198,24 @@ fun HomeScreen(navController: NavController) {
                     StreakItem(value = currentStreak, label = "Current")
                     StreakItem(value = longestStreak, label = "Best")
                 }
+
+                val dayProgress = viewModel.dayProgress()
+                val hoursUntilNextDay = viewModel.hoursUntilNextDay()
+
+                Spacer(Modifier.height(18.dp))
+                Text(
+                    text = "Next day in about ${hoursUntilNextDay}h",
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.82f)
+                )
+                LinearProgressIndicator(
+                    progress = { dayProgress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    color = Color.White,
+                    trackColor = Color.White.copy(alpha = 0.18f)
+                )
 
                 Spacer(Modifier.weight(1f))
                 Text("You're trying — that matters 🤍", fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f))

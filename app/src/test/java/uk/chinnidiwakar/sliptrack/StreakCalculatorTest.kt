@@ -3,6 +3,7 @@ package uk.chinnidiwakar.sliptrack
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 
 class StreakCalculatorTest {
@@ -27,7 +28,22 @@ class StreakCalculatorTest {
     }
 
     @Test
-    fun longestStreak_returnsLargestGapBetweenSlipDays() {
+    fun currentStreak_requiresFull24HoursBeforeCountingDay() {
+        val zone = ZoneId.systemDefault()
+        val lastSlip = LocalDateTime.of(2026, 1, 1, 23, 0)
+            .atZone(zone)
+            .toInstant()
+            .toEpochMilli()
+        val now = LocalDateTime.of(2026, 1, 2, 5, 0)
+            .atZone(zone)
+            .toInstant()
+            .toEpochMilli()
+
+        assertEquals(0, StreakCalculator.currentStreak(listOf(SlipEvent(timestamp = lastSlip)), now))
+    }
+
+    @Test
+    fun longestStreak_returnsLargestGapBetweenSlips() {
         val slips = listOf(
             SlipEvent(timestamp = atStartOfDayEpochMillis(20)),
             SlipEvent(timestamp = atStartOfDayEpochMillis(15)),
